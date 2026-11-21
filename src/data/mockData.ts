@@ -73,7 +73,8 @@ export const norm = (v: string | undefined | null) => String(v ?? '').trim().toL
 
 export const seed: City[] = [
   { id: 'kazan', name: 'Казань', country: 'Россия', currency: '₽', slug: 'kazan', lat: 55.7961, lng: 49.1064 },
-  { id: 'novi-sad', name: 'Нови-Сад', country: 'Сербия', currency: 'RSD', slug: 'novi-sad', lat: 45.2671, lng: 19.8335 }
+  { id: 'moscow', name: 'Москва', country: 'Россия', currency: '₽', slug: 'moscow', lat: 55.7558, lng: 37.6173 },
+  { id: 'spb', name: 'Санкт-Петербург', country: 'Россия', currency: '₽', slug: 'spb', lat: 59.9343, lng: 30.3351 }
 ];
 
 export const mockPlaces = (city: City): Place[] => [
@@ -97,7 +98,7 @@ export const mockPlaces = (city: City): Place[] => [
     live_signal_text: null,
     live_signal_expires_at: null,
     opening_hours: 'Ежедневно, 11:00 – 21:00',
-    social_link: 'https://t.me/second_chance_kazan'
+    social_link: 'https://t.me/second_chance_ru'
   },
   {
     id: 'demo-' + city.slug + '-2',
@@ -119,7 +120,7 @@ export const mockPlaces = (city: City): Place[] => [
     live_signal_text: null,
     live_signal_expires_at: null,
     opening_hours: 'Вт–Вс, 12:00 – 20:00',
-    social_link: 'https://t.me/vintage_dom_kzn'
+    social_link: 'https://t.me/vintage_dom_ru'
   },
   {
     id: 'demo-' + city.slug + '-3',
@@ -153,7 +154,7 @@ export const mockEvents = (city: City): Event[] => [
     description: 'Городская распродажа гардеробов, винила, керамики и локальных проектов.',
     start_date: new Date(Date.now() + 86400000).toISOString(),
     end_date: new Date(Date.now() + 86400000 * 2).toISOString(),
-    social_link: 'https://t.me/garage_sale_kzn',
+    social_link: 'https://t.me/garage_sale_ru',
     lat: city.lat + 0.01,
     lng: city.lng - 0.006
   },
@@ -187,29 +188,29 @@ export const mockOnline = (city: City): Market[] => [
   {
     id: 'demo-online-' + city.slug + '-1',
     city_id: city.id,
-    name: 'Avito / KupujemProdajem',
-    url: city.slug === 'kazan' ? 'https://www.avito.ru' : 'https://www.kupujemprodajem.com',
-    guide_text: 'Крупнейшая доска объявлений для поиска одежды, мебели и техники с рук.',
-    requires_local_phone: city.slug !== 'kazan',
+    name: 'Авито',
+    url: 'https://www.avito.ru',
+    guide_text: 'Крупнейшая площадка частных объявлений в России: одежда, винтаж, мебель и книги с Авито Доставкой.',
+    requires_local_phone: false,
     has_delivery: true
   },
   {
     id: 'demo-online-' + city.slug + '-2',
     city_id: city.id,
-    name: 'Telegram · локальные барахолки',
+    name: 'Telegram · локальные барахолки и свопы',
     url: 'https://t.me/',
-    guide_text: 'Локальные каналы и чаты с частными объявлениями и свопами.',
+    guide_text: `Городские каналы и чаты (${city.name}): отдам даром, расхламление, ресейл-подборки.`,
     requires_local_phone: false,
     has_delivery: false
   },
   {
     id: 'demo-online-' + city.slug + '-3',
     city_id: city.id,
-    name: 'Facebook Marketplace',
-    url: 'https://www.facebook.com/marketplace/',
-    guide_text: 'Онлайн-площадка для поиска вещей и предметов интерьера рядом.',
+    name: 'ВКонтакте · Барахолки и ресейл-сообщества',
+    url: 'https://vk.com',
+    guide_text: `Тематические паблики и локальные объявления в городе ${city.name}.`,
     requires_local_phone: false,
-    has_delivery: false
+    has_delivery: true
   }
 ];
 
@@ -239,11 +240,10 @@ export function buildYandexMapsUrl(address: string | null | undefined, cityName:
 }
 
 /**
- * Единые ценовые метки в зависимости от валюты города (₽ для Казани / RSD для Сербии)
+ * Единые ценовые метки в рублях (₽)
  */
-export function formatPriceRange(p: Place, currency: string) {
-  const isRsd = norm(currency) === 'rsd';
-  const cur = isRsd ? 'RSD' : '₽';
+export function formatPriceRange(p: Place, currency = '₽') {
+  const cur = currency || '₽';
 
   if (p.price_min === 0 && p.price_max === 0) {
     return 'Бесплатно / обмен';
@@ -252,19 +252,7 @@ export function formatPriceRange(p: Place, currency: string) {
   const maxVal = p.price_max ?? p.price_min;
 
   if (maxVal != null) {
-    if (!isRsd) {
-      if (maxVal <= 500) return `Очень дёшево (до 500 ${cur})`;
-      if (maxVal <= 1500) return `Бюджетно (500–1 500 ${cur})`;
-      if (maxVal <= 4000) return `Средний сегмент (1 500–4 000 ${cur})`;
-      return `Винтаж и селектив (от 4 000 ${cur})`;
-    } else {
-      if (maxVal <= 600) return `Очень дёшево (до 600 ${cur})`;
-      if (maxVal <= 2000) return `Бюджетно (600–2 000 ${cur})`;
-      if (maxVal <= 5000) return `Средний сегмент (2 000–5 000 ${cur})`;
-      return `Винтаж и селектив (от 5 000 ${cur})`;
-    }
-  }
-
-  // Дефолтная метка для Казани/города, если конкретные цифры в базе ещё не проставлены
-  return isRsd ? `Бюджетно (до 2 000 ${cur})` : `Бюджетно (до 1 500 ${cur})`;
-}
+    if (maxVal <= 500) return `Очень дёшево (до 500 ${cur})`;
+    if (maxVal <= 1500) return `Бюджетно (500–1 500 ${cur})`;
+    if (maxVal <= 4000) return `Средний сегмент (1 500–4 000 ${cur})`;
+    return
