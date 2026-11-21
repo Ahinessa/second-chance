@@ -1,11 +1,20 @@
 export function SizeTable() {
-  const clothing = [
-    ['XS', '40–42', '34–36', '0–2', 'Б 78–84 · Т 58–64 · Б 84–90'],
-    ['S', '42–44', '36–38', '2–4', 'Б 84–90 · Т 64–70 · Б 90–96'],
-    ['M', '44–46', '38–40', '4–6', 'Б 90–96 · Т 70–76 · Б 96–102'],
-    ['L', '46–48', '40–42', '6–8', 'Б 96–102 · Т 76–82 · Б 102–108'],
-    ['XL', '48–50', '42–44', '8–10', 'Б 102–110 · Т 82–90 · Б 108–116'],
-    ['XXL', '50–52', '44–46', '10–12', 'Б 110–118 · Т 90–98 · Б 116–124']
+  const womenClothing = [
+    ['XS', '40–42', '34–36', '0–2', 'Г 78–84 · Т 58–64 · Б 84–90'],
+    ['S', '42–44', '36–38', '2–4', 'Г 84–90 · Т 64–70 · Б 90–96'],
+    ['M', '44–46', '38–40', '4–6', 'Г 90–96 · Т 70–76 · Б 96–102'],
+    ['L', '46–48', '40–42', '6–8', 'Г 96–102 · Т 76–82 · Б 102–108'],
+    ['XL', '48–50', '42–44', '8–10', 'Г 102–110 · Т 82–90 · Б 108–116'],
+    ['XXL', '50–52', '44–46', '10–12', 'Г 110–118 · Т 90–98 · Б 116–124']
+  ];
+
+  const menClothing = [
+    ['XS', '44', '44', '34', 'Г 86–90 · Т 74–78'],
+    ['S', '46', '46', '36', 'Г 90–94 · Т 78–82'],
+    ['M', '48', '48', '38', 'Г 94–98 · Т 82–86'],
+    ['L', '50', '50', '40', 'Г 98–102 · Т 86–90'],
+    ['XL', '52', '52', '42', 'Г 102–106 · Т 90–94'],
+    ['XXL', '54–56', '54–56', '44–46', 'Г 106–114 · Т 94–102']
   ];
 
   const shoes = [
@@ -17,37 +26,73 @@ export function SizeTable() {
     ['40', '40', '9', '25'],
     ['41', '41', '10', '26'],
     ['42', '42', '11', '26.5'],
-    ['43', '43', '12', '27.5']
+    ['43', '43', '12', '27.5'],
+    ['44', '44', '13', '28.5'],
+    ['45', '45', '14', '29.5']
   ];
 
   return (
-    <div className="size-content">
-      <h3>ОДЕЖДА · ЖЕНСКАЯ (ОРИЕНТИРОВОЧНО)</h3>
-      <div className="table-scroll">
-        <table className="size-table">
-          <thead>
-            <tr><th>INT</th><th>RU</th><th>EU</th><th>US</th><th>МЕРКИ, СМ</th></tr>
-          </thead>
-          <tbody>
-            {clothing.map(r => (
-              <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="size-content space-y-5">
+      <div
+        style={{
+          backgroundColor: '#CCFF00',
+          border: '1px solid #000',
+          padding: '12px 14px',
+          fontSize: '13px',
+          lineHeight: '1.45'
+        }}
+      >
+        <strong>Важно учитывать при выборе:</strong> в секонд-хендах и винтажных магазинах встречаются вещи разных эпох (80-х, 90-х, 2000-х) и разных стран-производителей (Европа, США, Япония, СССР). Исторические и региональные размерные сетки сильно отличаются от современных — ориентируйтесь прежде всего на реальные замеры в сантиметрах, а не только на бирку.
       </div>
-      <p className="size-note">Б — грудь / Т — талия / Б — бёдра. Сверяйте мерки конкретной вещи: винтаж и бренды могут отличаться.</p>
-      <h3>ОБУВЬ</h3>
-      <div className="table-scroll">
-        <table className="size-table">
-          <thead>
-            <tr><th>RU / EU</th><th>EU</th><th>US</th><th>СТОПА, СМ</th></tr>
-          </thead>
-          <tbody>
-            {shoes.map(r => (
-              <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div>
+        <h3>ОДЕЖДА · ЖЕНСКАЯ</h3>
+        <div className="table-scroll">
+          <table className="size-table">
+            <thead>
+              <tr><th>INT</th><th>RU</th><th>EU</th><th>US</th><th>МЕРКИ, СМ</th></tr>
+            </thead>
+            <tbody>
+              {womenClothing.map(r => (
+                <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="size-note">Г — обхват груди · Т — талия · Б — бёдра.</p>
+      </div>
+
+      <div>
+        <h3>ОДЕЖДА · МУЖСКАЯ</h3>
+        <div className="table-scroll">
+          <table className="size-table">
+            <thead>
+              <tr><th>INT</th><th>RU</th><th>EU</th><th>US / UK</th><th>МЕРКИ, СМ</th></tr>
+            </thead>
+            <tbody>
+              {menClothing.map(r => (
+                <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="size-note">Г — обхват груди · Т — талия.</p>
+      </div>
+
+      <div>
+        <h3>ОБУВЬ (УНИСЕКС)</h3>
+        <div className="table-scroll">
+          <table className="size-table">
+            <thead>
+              <tr><th>RU</th><th>EU</th><th>US</th><th>СТОПА, СМ</th></tr>
+            </thead>
+            <tbody>
+              {shoes.map(r => (
+                <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
