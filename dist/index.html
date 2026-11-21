@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SECOND CHANCE</title>
+    <style>
+      html,body{margin:0;min-height:100%;background:#f4efe4;color:#111;font-family:system-ui,sans-serif}
+      #startup-message{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+      #startup-card{width:min(680px,100%);border:2px solid #111;padding:24px;background:#CCFF00}
+      #startup-card h1{font-size:28px;margin:0 0 12px;font-weight:900}
+      #startup-card p{margin:0;line-height:1.5}
+    </style>
+    <script type="module" crossorigin src="/assets/index-BXc5R-Li.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CuIbi2qG.css">
+  </head>
+  <body>
+    <div id="root">
+      <div id="startup-message"><div id="startup-card"><h1>SECOND CHANCE</h1><p>Загружаем приложение…</p></div></div>
+    </div>
+    <script>
+      (function(){
+        function showFailure(message){
+          var card=document.getElementById('startup-card');
+          if(!card)return;
+          card.innerHTML='<h1>SECOND CHANCE</h1><p><strong>Не удалось загрузить приложение.</strong></p><p style="margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere">'+String(message||'Неизвестная ошибка').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</p><button onclick="location.reload()" style="margin-top:16px;padding:10px;border:2px solid #111;background:#fff;font-weight:bold">ОБНОВИТЬ</button>';
+        }
+        window.addEventListener('error',function(e){if(e.target&&e.target.tagName==='SCRIPT'){showFailure('Не загрузился JavaScript-файл: '+(e.target.src||'script'));}else if(e.message){showFailure(e.message);}});
+        window.setTimeout(function(){
+          var card=document.getElementById('startup-card');
+          if(card && card.innerText.indexOf('Загружаем приложение')!==-1){
+            showFailure('JavaScript приложения не запустился за 12 секунд. Вероятно, Cloudflare Pages публикует исходный код вместо сборки Vite (dist), либо модуль /src/main.tsx не загружается.');
+          }
+        },12000);
+        window.addEventListener('unhandledrejection',function(e){showFailure(e.reason&&e.reason.message||e.reason||'Unhandled promise rejection');});
+      })();
+    </script>
+  </body>
+</html>
