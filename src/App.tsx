@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { supabase } from './lib/supabase';
 
 type City = { id: string; name: string; country: string; currency: string; slug: string; lat: number; lng: number };
-type Place = { id: string; city_id: string; name: string; place_type: string; categories: string[]; price_min: number | null; price_max: number | null; price_note: string | null; address: string | null; lat: number | null; lng: number | null; description: string | null; status: string; is_point_verified: boolean; is_assortment_verified: boolean; owner_id: string | null; live_signal_text: string | null; live_signal_expires_at: string | null; imageUrl?: string | null; opening_hours?: string | null };
+type Place = { id: string; city_id: string; name: string; place_type: string; categories: string[]; price_min: number | null; price_max: number | null; price_note: string | null; address: string | null; lat: number | null; lng: number | null; description: string | null; status: string; is_point_verified: boolean; is_assortment_verified: boolean; owner_id: string | null; live_signal_text: string | null; live_signal_expires_at: string | null; imageUrl?: string | null; opening_hours?: string | null; social_link?: string | null };
 type Event = { id: string; city_id?: string; title: string; description: string; start_date: string; end_date: string; social_link: string; imageUrl?: string | null; lat?: number | null; lng?: number | null; address?: string | null };
 type Market = { id: string; city_id?: string | null; name: string; url: string; guide_text: string; requires_local_phone: boolean; has_delivery: boolean };
 
@@ -21,15 +21,15 @@ const validTabs = ['place', 'market', 'online'];
 const norm = (v: string | undefined | null) => String(v ?? '').trim().toLowerCase();
 
 const mockPlaces = (city: City): Place[] => [
-  { id: 'demo-' + city.slug + '-1', city_id: city.id, name: city.name + ' · Секонд-хенд «Второй круг»', place_type: 'shop', categories: ['clothes'], price_min: 300, price_max: 1500, price_note: '₽ / RSD · пример', address: 'Центральная улица, 12', lat: city.lat + 0.006, lng: city.lng + 0.004, description: 'Демо-карточка для проверки фильтров и карты. Не реальное место.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null },
-  { id: 'demo-' + city.slug + '-2', city_id: city.id, name: city.name + ' · Винтаж и дом', place_type: 'shop', categories: ['home', 'antiques'], price_min: 500, price_max: 3000, price_note: 'примерный диапазон', address: 'Улица рынка, 8', lat: city.lat - 0.005, lng: city.lng + 0.007, description: 'Демо-карточка: винтаж, вещи для дома и декор.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null },
-  { id: 'demo-' + city.slug + '-3', city_id: city.id, name: city.name + ' · Обмен вещами', place_type: 'swap', categories: ['clothes', 'flea'], price_min: 0, price_max: 0, price_note: 'обмен / бесплатно', address: 'Парк, зона встреч', lat: city.lat - 0.004, lng: city.lng - 0.006, description: 'Демо-карточка для теста фильтра «Разное».', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null }
+  { id: 'demo-' + city.slug + '-1', city_id: city.id, name: city.name + ' · Секонд-хенд «Второй круг»', place_type: 'shop', categories: ['clothes'], price_min: 300, price_max: 1500, price_note: '300–1500 ' + city.currency, address: city.name + ', Центральная улица, 12', lat: city.lat + 0.006, lng: city.lng + 0.004, description: 'Демо-карточка для проверки фильтров и карты. Не реальное место.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Ежедневно, 11:00 – 21:00', social_link: 'https://t.me/' },
+  { id: 'demo-' + city.slug + '-2', city_id: city.id, name: city.name + ' · Винтаж и дом', place_type: 'shop', categories: ['home', 'antiques'], price_min: 500, price_max: 3000, price_note: '500–3000 ' + city.currency, address: city.name + ', Улица рынка, 8', lat: city.lat - 0.005, lng: city.lng + 0.007, description: 'Демо-карточка: винтаж, вещи для дома и декор.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Вт–Вс, 12:00 – 20:00', social_link: 'https://t.me/' },
+  { id: 'demo-' + city.slug + '-3', city_id: city.id, name: city.name + ' · Обмен вещами', place_type: 'swap', categories: ['clothes', 'flea'], price_min: 0, price_max: 0, price_note: 'Бесплатно / обмен', address: city.name + ', Парк, зона встреч', lat: city.lat - 0.004, lng: city.lng - 0.006, description: 'Демо-карточка для теста фильтра «Разное».', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Сб–Вс, 13:00 – 18:00', social_link: 'https://t.me/' }
 ];
 
 const mockEvents = (city: City): Event[] => [
-  { id: 'demo-market-' + city.slug + '-1', city_id: city.id, title: city.name + ' · Гараж-сейл', address: 'Арт-пространство, 5', description: 'Демо-событие для проверки вкладки. Не является реальным мероприятием.', start_date: new Date(Date.now() + 86400000).toISOString(), end_date: new Date(Date.now() + 86400000 * 2).toISOString(), social_link: '', lat: city.lat + 0.01, lng: city.lng - 0.006 },
-  { id: 'demo-market-' + city.slug + '-2', city_id: city.id, title: city.name + ' · Винтажный маркет', address: 'Центральный двор', description: 'Тестовая карточка маркета.', start_date: new Date(Date.now() + 86400000 * 4).toISOString(), end_date: new Date(Date.now() + 86400000 * 4).toISOString(), social_link: '', lat: city.lat - 0.008, lng: city.lng + 0.003 },
-  { id: 'demo-market-' + city.slug + '-3', city_id: city.id, title: city.name + ' · Своп выходного дня', address: 'Культурный центр', description: 'Демо-событие для визуальной проверки.', start_date: new Date(Date.now() + 86400000 * 7).toISOString(), end_date: new Date(Date.now() + 86400000 * 7).toISOString(), social_link: '', lat: city.lat + 0.002, lng: city.lng + 0.009 }
+  { id: 'demo-market-' + city.slug + '-1', city_id: city.id, title: city.name + ' · Гараж-сейл', address: city.name + ', Арт-пространство, 5', description: 'Демо-событие для проверки вкладки. Не является реальным мероприятием.', start_date: new Date(Date.now() + 86400000).toISOString(), end_date: new Date(Date.now() + 86400000 * 2).toISOString(), social_link: 'https://t.me/', lat: city.lat + 0.01, lng: city.lng - 0.006 },
+  { id: 'demo-market-' + city.slug + '-2', city_id: city.id, title: city.name + ' · Винтажный маркет', address: city.name + ', Центральный двор', description: 'Тестовая карточка маркета.', start_date: new Date(Date.now() + 86400000 * 4).toISOString(), end_date: new Date(Date.now() + 86400000 * 4).toISOString(), social_link: 'https://t.me/', lat: city.lat - 0.008, lng: city.lng + 0.003 },
+  { id: 'demo-market-' + city.slug + '-3', city_id: city.id, title: city.name + ' · Своп выходного дня', address: city.name + ', Культурный центр', description: 'Демо-событие для визуальной проверки.', start_date: new Date(Date.now() + 86400000 * 7).toISOString(), end_date: new Date(Date.now() + 86400000 * 7).toISOString(), social_link: 'https://t.me/', lat: city.lat + 0.002, lng: city.lng + 0.009 }
 ];
 
 const mockOnline = (city: City): Market[] => [
@@ -46,6 +46,33 @@ function validCategoriesStored() {
 function validTabStored() {
   const v = sessionStorage.getItem('sc-tab');
   return validTabs.includes(v || '') ? v : 'place';
+}
+
+function formatDateSafe(dateStr?: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU');
+}
+
+function buildGoogleMapsUrl(address: string | null | undefined, cityName: string, lat?: number | null, lng?: number | null) {
+  if (address && address.trim()) {
+    const query = address.toLowerCase().includes(cityName.toLowerCase()) ? address : `${cityName}, ${address}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+  if (lat != null && lng != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cityName)}`;
+}
+
+function formatPriceRange(p: Place, currency: string) {
+  if (p.price_min != null && p.price_max != null) {
+    if (p.price_min === 0 && p.price_max === 0) return 'Бесплатно / обмен';
+    return `${p.price_min}–${p.price_max} ${currency}`.trim();
+  }
+  if (p.price_min != null) return `от ${p.price_min} ${currency}`.trim();
+  if (p.price_max != null) return `до ${p.price_max} ${currency}`.trim();
+  return p.price_note || 'Диапазон уточняется';
 }
 
 const seed: City[] = [
@@ -307,6 +334,9 @@ export default function App() {
     ['online', 'ОНЛАЙН', 'Сайты, Авито, ТГ-каналы']
   ];
 
+  // Определяем тип открытой карточки: постоянное место (Place) или однодневный маркет (Event)
+  const isSelectedPlace = selected !== null && 'place_type' in selected;
+
   return (
     <div className="min-h-screen">
       <header className="site-header">
@@ -367,7 +397,7 @@ export default function App() {
                       <Popup>
                         <b>{e.title}</b><br />
                         СОБЫТИЕ / 1 ДЕНЬ<br />
-                        {new Date(e.start_date).toLocaleDateString()}<br />
+                        {formatDateSafe(e.start_date)}<br />
                         <button className="popup-action" onClick={() => setSelected(e)}>ОТКРЫТЬ КАРТОЧКУ</button>
                       </Popup>
                     </Marker>
@@ -392,10 +422,14 @@ export default function App() {
               {(tab === 'place' ? list : eventList).map(item => {
                 const isMarket = tab === 'market';
                 const cardName = isMarket ? (item as Event).title : (item as Place).name;
-                const cardAddress = isMarket ? ((item as Event).address || 'МАРКЕТ / СОБЫТИЕ') : ((item as Place).address || 'Адрес не указан');
+                const rawAddress = isMarket ? (item as Event).address : (item as Place).address;
+                const cardAddress = rawAddress ? (rawAddress.toLowerCase().includes(city.name.toLowerCase()) ? rawAddress : `${city.name}, ${rawAddress}`) : `${city.name} (адрес уточняется)`;
                 const cardDescription = item.description || 'Описание пока не добавлено.';
-                const cardPrice = isMarket ? 'Вход / цены уточняйте' : ((item as Place).price_note || 'Цены не указаны');
-                const cardDate = isMarket ? new Date((item as Event).start_date).toLocaleDateString() + ' – ' + new Date((item as Event).end_date).toLocaleDateString() : null;
+                const cardPrice = isMarket ? 'Вход / цены уточняйте' : formatPriceRange(item as Place, city.currency);
+                const startStr = isMarket ? formatDateSafe((item as Event).start_date) : '';
+                const endStr = isMarket ? formatDateSafe((item as Event).end_date) : '';
+                const cardDate = startStr ? (endStr && endStr !== startStr ? `${startStr} – ${endStr}` : startStr) : 'Дата уточняется';
+
                 const routeItem = isMarket
                   ? ({ id: item.id, name: cardName, city_id: city.id, place_type: 'market', categories: [], price_min: 0, price_max: 0, price_note: cardPrice, address: cardAddress, lat: (item as Event).lat ?? null, lng: (item as Event).lng ?? null, description: cardDescription, status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null } as Place)
                   : (item as Place);
@@ -443,9 +477,13 @@ export default function App() {
                 <div className="format-tag online-tag">ОНЛАЙН</div>
                 <h2>{m.name}</h2>
                 <p>{m.guide_text}</p>
-                <span className="stamp">{m.requires_local_phone ? 'МЕСТНАЯ SIM' : 'SIM НЕ НУЖНА'}</span>{' '}
-                <span className="stamp">{m.has_delivery ? 'ДОСТАВКА' : 'УТОЧНИТЬ'}</span>
-                <a className="block underline mt-3" href={m.url} target="_blank" rel="noreferrer">Открыть ↗</a>
+                <div className="flex flex-wrap gap-2 my-2">
+                  <span className="stamp">{m.requires_local_phone ? 'МЕСТНАЯ SIM' : 'SIM НЕ НУЖНА'}</span>
+                  <span className="stamp">{m.has_delivery ? 'ДОСТАВКА' : 'УТОЧНИТЬ'}</span>
+                </div>
+                <a className="lime-button inline-block mt-3 text-center" href={m.url} target="_blank" rel="noreferrer">
+                  ПЕРЕЙТИ В СОЦСЕТИ / НА САЙТ ↗
+                </a>
               </article>
             ))}
           </div>
@@ -464,29 +502,97 @@ export default function App() {
       )}
 
       {selected && (
-        <Modal title={'name' in selected ? selected.name : selected.title} close={() => setSelected(null)}>
-          <div className="place-detail">
-            <p className="place-address">⌖ {selected.address || 'Адрес уточняется'}</p>
-            <p className="hours">
-              {'opening_hours' in selected
-                ? (selected.opening_hours || 'График работы уточняйте у магазина')
-                : 'Даты проведения: ' + new Date(selected.start_date).toLocaleDateString() + ' – ' + new Date(selected.end_date).toLocaleDateString()}
-            </p>
-            {selected.imageUrl
-              ? <img className="place-photo" src={selected.imageUrl} alt={'name' in selected ? selected.name : selected.title} onError={e => { e.currentTarget.style.display = 'none'; }} />
-              : <div className="photo-placeholder">ФОТО СКОРО ПОЯВИТСЯ</div>}
-            <p className="description">{selected.description || 'Описание пока не добавлено.'}</p>
-            {'categories' in selected && (
-              <div className="detail-tags">
-                {selected.categories?.map(c => <span className="stamp" key={c}>{categories.find(x => x[0] === c)?.[1] || c}</span>)}
-                <span className="stamp">{selected.price_note || 'Цены не указаны'}</span>
+        <Modal title={isSelectedPlace ? (selected as Place).name : (selected as Event).title} close={() => setSelected(null)}>
+          <div className="place-detail space-y-4">
+            {/* 1. ПЛАШКИ КАТЕГОРИЙ / ФОРМАТА СРАЗУ ПОД НАЗВАНИЕМ */}
+            {isSelectedPlace ? (
+              <div className="detail-tags flex flex-wrap gap-2">
+                <span className="stamp bg-[#CCFF00]">ПОСТОЯННО · МАГАЗИН</span>
+                {(selected as Place).categories?.map(c => (
+                  <span className="stamp" key={c}>{categories.find(x => x[0] === c)?.[1] || c}</span>
+                ))}
+                {(selected as Place).is_point_verified && <span className="stamp">ТОЧКА ПРОВЕРЕНА</span>}
+                {(selected as Place).is_assortment_verified && <span className="stamp">АССОРТИМЕНТ ПОДТВЕРЖДЁН</span>}
+              </div>
+            ) : (
+              <div className="detail-tags flex flex-wrap gap-2">
+                <span className="stamp bg-orange-400">СОБЫТИЕ / МАРКЕТ</span>
               </div>
             )}
-            {'is_point_verified' in selected && selected.is_point_verified && <span className="stamp">ТОЧКА ПРОВЕРЕНА</span>}
-            {'is_assortment_verified' in selected && selected.is_assortment_verified && <span className="stamp">АССОРТИМЕНТ ПОДТВЕРЖДЁН</span>}
-            {'social_link' in selected && selected.social_link && <a href={selected.social_link} target="_blank" rel="noreferrer" className="underline">Ссылка на организатора ↗</a>}
-            {'is_point_verified' in selected && (
-              <div className="status-actions">
+
+            {/* 2. ПОЛНЫЙ АДРЕС СО ССЫЛКОЙ В GOOGLE MAPS */}
+            <div className="info-block border-t border-black/20 pt-3 space-y-2">
+              <p className="place-address">
+                <b>Адрес:</b>{' '}
+                <a
+                  href={buildGoogleMapsUrl(selected.address, city.name, selected.lat, selected.lng)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:bg-[#CCFF00] transition-colors"
+                  title="Открыть на Google Картах"
+                >
+                  {selected.address
+                    ? (selected.address.toLowerCase().includes(city.name.toLowerCase()) ? selected.address : `${city.name}, ${selected.address}`)
+                    : `${city.name} (посмотреть на карте)`} ↗
+                </a>
+              </p>
+
+              {/* 3. ДЛЯ ПОСТОЯННЫХ МЕСТ: ЦЕНОВОЙ ДИАПАЗОН + ВРЕМЯ РАБОТЫ (БЕЗ ДАТ!) */}
+              {isSelectedPlace ? (
+                <>
+                  <p>
+                    <b>Ценовой диапазон:</b> {formatPriceRange(selected as Place, city.currency)}
+                  </p>
+                  <p className="hours">
+                    <b>Время работы:</b> {(selected as Place).opening_hours || 'Уточняйте в соцсетях магазина'}
+                  </p>
+                </>
+              ) : (
+                /* ДЛЯ ОДНОДНЕВНЫХ МАРКЕТОВ: ДАТЫ ПРОВЕДЕНИЯ */
+                <p className="hours">
+                  <b>Даты проведения:</b>{' '}
+                  {(() => {
+                    const s = formatDateSafe((selected as Event).start_date);
+                    const e = formatDateSafe((selected as Event).end_date);
+                    if (!s) return 'Уточняются у организаторов';
+                    return e && e !== s ? `${s} – ${e}` : s;
+                  })()}
+                </p>
+              )}
+
+              {/* 4. СОЦСЕТИ (И ДЛЯ ПОСТОЯННЫХ МЕСТ, И ДЛЯ МАРКЕТОВ) */}
+              {selected.social_link && (
+                <p>
+                  <b>Соцсети:</b>{' '}
+                  <a href={selected.social_link} target="_blank" rel="noreferrer" className="underline">
+                    Перейти в профиль / канал ↗
+                  </a>
+                </p>
+              )}
+            </div>
+
+            {/* 5. ТЕКСТОВОЕ ОПИСАНИЕ */}
+            <p className="description border-t border-black/20 pt-3">
+              {selected.description || 'Описание пока не добавлено.'}
+            </p>
+
+            {/* 6. ФОТОГРАФИЯ В САМОМ НИЗУ ПОД ВСЕЙ ИНФОРМАЦИЕЙ */}
+            <div className="pt-2">
+              {selected.imageUrl ? (
+                <img
+                  className="place-photo w-full border border-black"
+                  src={selected.imageUrl}
+                  alt={isSelectedPlace ? (selected as Place).name : (selected as Event).title}
+                  onError={e => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="photo-placeholder">ФОТО СКОРО ПОЯВИТСЯ</div>
+              )}
+            </div>
+
+            {/* 7. КНОПКИ АКТУАЛЬНОСТИ ДЛЯ ПОСТОЯННЫХ МЕСТ */}
+            {isSelectedPlace && (
+              <div className="status-actions pt-3 border-t border-black">
                 <button className="lime-button" onClick={() => confirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
                 <button className="closed-button" onClick={() => confirm(true)}>ЗАКРЫЛОСЬ</button>
               </div>
