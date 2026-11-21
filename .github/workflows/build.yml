@@ -1,16 +1,33 @@
-name: Build
+name: Build and publish Pages assets
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "dist/**"
   pull_request:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - run: npm install
       - run: npm run build
+      - name: Commit built assets for Cloudflare Pages (which has no build command configured)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist
+          if git diff --cached --quiet; then
+            echo "No built assets changed"
+          else
+            git commit -m "Publish built frontend assets"
+            git push
+          fi
