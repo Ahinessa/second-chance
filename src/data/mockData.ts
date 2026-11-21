@@ -83,13 +83,13 @@ export const mockPlaces = (city: City): Place[] => [
     name: city.name + ' · Секонд-хенд «Второй круг»',
     place_type: 'shop',
     categories: ['clothes'],
-    price_min: 300,
-    price_max: 1500,
-    price_note: '300–1500 ' + city.currency,
+    price_min: 150,
+    price_max: 500,
+    price_note: null,
     address: city.name + ', Центральная улица, 12',
     lat: city.lat + 0.006,
     lng: city.lng + 0.004,
-    description: 'Демо-карточка для проверки фильтров и карты. Не реальное место.',
+    description: 'Большой выбор базовой повседневной одежды, денима и верхней одежды с регулярными обновлениями зала.',
     status: 'approved',
     is_point_verified: false,
     is_assortment_verified: false,
@@ -97,7 +97,7 @@ export const mockPlaces = (city: City): Place[] => [
     live_signal_text: null,
     live_signal_expires_at: null,
     opening_hours: 'Ежедневно, 11:00 – 21:00',
-    social_link: 'https://t.me/second_chance_demo'
+    social_link: 'https://t.me/second_chance_kazan'
   },
   {
     id: 'demo-' + city.slug + '-2',
@@ -106,19 +106,20 @@ export const mockPlaces = (city: City): Place[] => [
     place_type: 'shop',
     categories: ['home', 'antiques'],
     price_min: 500,
-    price_max: 3000,
-    price_note: '500–3000 ' + city.currency,
+    price_max: 1500,
+    price_note: null,
     address: city.name + ', Улица рынка, 8',
     lat: city.lat - 0.005,
     lng: city.lng + 0.007,
-    description: 'Демо-карточка: винтаж, вещи для дома и декор.',
+    description: 'Селективный винтаж, посуда, предметы интерьера, книги и редкие находки для дома.',
     status: 'approved',
     is_point_verified: false,
     is_assortment_verified: false,
     owner_id: null,
     live_signal_text: null,
     live_signal_expires_at: null,
-    opening_hours: 'Вт–Вс, 12:00 – 20:00'
+    opening_hours: 'Вт–Вс, 12:00 – 20:00',
+    social_link: 'https://t.me/vintage_dom_kzn'
   },
   {
     id: 'demo-' + city.slug + '-3',
@@ -128,11 +129,11 @@ export const mockPlaces = (city: City): Place[] => [
     categories: ['clothes', 'flea'],
     price_min: 0,
     price_max: 0,
-    price_note: 'Бесплатно / обмен',
+    price_note: null,
     address: city.name + ', Парк, зона встреч',
     lat: city.lat - 0.004,
     lng: city.lng - 0.006,
-    description: 'Демо-карточка для теста фильтра «Разное».',
+    description: 'Свободный обмен одеждой, книгами и полезными мелочами без денег.',
     status: 'approved',
     is_point_verified: false,
     is_assortment_verified: false,
@@ -149,10 +150,10 @@ export const mockEvents = (city: City): Event[] => [
     city_id: city.id,
     title: city.name + ' · Гараж-сейл',
     address: city.name + ', Арт-пространство, 5',
-    description: 'Демо-событие для проверки вкладки. Не является реальным мероприятием.',
+    description: 'Городская распродажа гардеробов, винила, керамики и локальных проектов.',
     start_date: new Date(Date.now() + 86400000).toISOString(),
     end_date: new Date(Date.now() + 86400000 * 2).toISOString(),
-    social_link: 'https://t.me/garage_sale_demo',
+    social_link: 'https://t.me/garage_sale_kzn',
     lat: city.lat + 0.01,
     lng: city.lng - 0.006
   },
@@ -161,7 +162,7 @@ export const mockEvents = (city: City): Event[] => [
     city_id: city.id,
     title: city.name + ' · Винтажный маркет',
     address: city.name + ', Центральный двор',
-    description: 'Тестовая карточка маркета.',
+    description: 'Выходной маркет от локальных коллекционеров и винтажных лавок.',
     start_date: new Date(Date.now() + 86400000 * 4).toISOString(),
     end_date: new Date(Date.now() + 86400000 * 4).toISOString(),
     social_link: '',
@@ -173,7 +174,7 @@ export const mockEvents = (city: City): Event[] => [
     city_id: city.id,
     title: city.name + ' · Своп выходного дня',
     address: city.name + ', Культурный центр',
-    description: 'Демо-событие для визуальной проверки.',
+    description: 'Открытый обмен вещами, растениями и книгами.',
     start_date: new Date(Date.now() + 86400000 * 7).toISOString(),
     end_date: new Date(Date.now() + 86400000 * 7).toISOString(),
     social_link: '',
@@ -188,7 +189,7 @@ export const mockOnline = (city: City): Market[] => [
     city_id: city.id,
     name: 'Avito / KupujemProdajem',
     url: city.slug === 'kazan' ? 'https://www.avito.ru' : 'https://www.kupujemprodajem.com',
-    guide_text: 'Демо-подборка площадок для города. Проверяйте продавца и условия доставки.',
+    guide_text: 'Крупнейшая доска объявлений для поиска одежды, мебели и техники с рук.',
     requires_local_phone: city.slug !== 'kazan',
     has_delivery: true
   },
@@ -197,7 +198,7 @@ export const mockOnline = (city: City): Market[] => [
     city_id: city.id,
     name: 'Telegram · локальные барахолки',
     url: 'https://t.me/',
-    guide_text: 'Поиск локальных каналов и групп. Демо-карточка.',
+    guide_text: 'Локальные каналы и чаты с частными объявлениями и свопами.',
     requires_local_phone: false,
     has_delivery: false
   },
@@ -206,7 +207,7 @@ export const mockOnline = (city: City): Market[] => [
     city_id: city.id,
     name: 'Facebook Marketplace',
     url: 'https://www.facebook.com/marketplace/',
-    guide_text: 'Демо-карточка онлайн-площадки.',
+    guide_text: 'Онлайн-площадка для поиска вещей и предметов интерьера рядом.',
     requires_local_phone: false,
     has_delivery: false
   }
@@ -220,7 +221,8 @@ export function formatDateSafe(dateStr?: string) {
 
 export function buildGoogleMapsUrl(address: string | null | undefined, cityName: string, lat?: number | null, lng?: number | null) {
   if (address && address.trim()) {
-    const query = address.toLowerCase().includes(cityName.toLowerCase()) ? address : `${cityName}, ${address}`;
+    const cleanAddr = address.replace(/\(пример адреса\)/gi, '').trim();
+    const query = cleanAddr.toLowerCase().includes(cityName.toLowerCase()) ? cleanAddr : `${cityName}, ${cleanAddr}`;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
   if (lat != null && lng != null) {
@@ -229,12 +231,40 @@ export function buildGoogleMapsUrl(address: string | null | undefined, cityName:
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cityName)}`;
 }
 
+export function buildYandexMapsUrl(address: string | null | undefined, cityName: string, placeName?: string) {
+  const cleanAddr = (address || '').replace(/\(пример адреса\)/gi, '').trim();
+  const cleanName = (placeName || '').replace(/\(пример карточки\)/gi, '').trim();
+  const query = [cityName, cleanName, cleanAddr].filter(Boolean).join(', ');
+  return `https://yandex.ru/maps/?text=${encodeURIComponent(query)}`;
+}
+
+/**
+ * Единые ценовые метки в зависимости от валюты города (₽ для Казани / RSD для Сербии)
+ */
 export function formatPriceRange(p: Place, currency: string) {
-  if (p.price_min != null && p.price_max != null) {
-    if (p.price_min === 0 && p.price_max === 0) return 'Бесплатно / обмен';
-    return `${p.price_min}–${p.price_max} ${currency}`.trim();
+  const isRsd = norm(currency) === 'rsd';
+  const cur = isRsd ? 'RSD' : '₽';
+
+  if (p.price_min === 0 && p.price_max === 0) {
+    return 'Бесплатно / обмен';
   }
-  if (p.price_min != null) return `от ${p.price_min} ${currency}`.trim();
-  if (p.price_max != null) return `до ${p.price_max} ${currency}`.trim();
-  return p.price_note || 'Диапазон уточняется';
+
+  const maxVal = p.price_max ?? p.price_min;
+
+  if (maxVal != null) {
+    if (!isRsd) {
+      if (maxVal <= 500) return `Очень дёшево (до 500 ${cur})`;
+      if (maxVal <= 1500) return `Бюджетно (500–1 500 ${cur})`;
+      if (maxVal <= 4000) return `Средний сегмент (1 500–4 000 ${cur})`;
+      return `Винтаж и селектив (от 4 000 ${cur})`;
+    } else {
+      if (maxVal <= 600) return `Очень дёшево (до 600 ${cur})`;
+      if (maxVal <= 2000) return `Бюджетно (600–2 000 ${cur})`;
+      if (maxVal <= 5000) return `Средний сегмент (2 000–5 000 ${cur})`;
+      return `Винтаж и селектив (от 5 000 ${cur})`;
+    }
+  }
+
+  // Дефолтная метка для Казани/города, если конкретные цифры в базе ещё не проставлены
+  return isRsd ? `Бюджетно (до 2 000 ${cur})` : `Бюджетно (до 1 500 ${cur})`;
 }
