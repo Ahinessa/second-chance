@@ -1,0 +1,1 @@
+import{createClient}from'@supabase/supabase-js';export const supabase=createClient(import.meta.env.VITE_SUPABASE_URL||'https://pactumjrziwltfjbvlvn.supabase.co',import.meta.env.VITE_SUPABASE_ANON_KEY||'sb_publishable_zYVmGDc9y2ds52LbTMWlKQ_-EzFW3PE');
