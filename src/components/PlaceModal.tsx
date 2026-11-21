@@ -150,7 +150,7 @@ export function PlaceModal({
   const badgeStyle: React.CSSProperties = {
     fontSize: '14px',
     fontWeight: 500,
-    padding: '6px 14px',
+    padding: '5px 13px',
     border: '1px solid #000',
     lineHeight: '1.2',
     letterSpacing: '0.01em',
@@ -162,14 +162,23 @@ export function PlaceModal({
   return (
     <div className="modalback" onClick={onClose}>
       <section className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
-        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '8px', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '22px', lineHeight: '1.25', fontWeight: 700, margin: 0 }}>{title}</h2>
+        {/* Шапка подтянута максимально близко к фильтрам */}
+        <header
+          className="modal-head"
+          style={{
+            borderBottom: 'none',
+            paddingBottom: 0,
+            marginBottom: '6px',
+            alignItems: 'center'
+          }}
+        >
+          <h2 style={{ fontSize: '22px', lineHeight: '1.2', fontWeight: 700, margin: 0 }}>{title}</h2>
           <button className="close-button" aria-label="Закрыть" onClick={onClose}>✕</button>
         </header>
 
-        <div className="place-detail space-y-4">
-          {/* 1. Плашки категорий + кнопка «В ЛЮБИМЫЕ» большими буквами без жирности */}
-          <div className="flex flex-wrap items-center gap-2.5">
+        <div className="place-detail">
+          {/* 1. Фильтры и кнопка «В ЛЮБИМЫЕ» вплотную под названием */}
+          <div className="flex flex-wrap items-center gap-2" style={{ marginTop: 0 }}>
             {isSelectedPlace ? (
               <>
                 <span style={{ ...badgeStyle, backgroundColor: '#CCFF00' }}>Постоянно · Магазин</span>
@@ -196,8 +205,7 @@ export function PlaceModal({
                 gap: '8px',
                 background: 'transparent',
                 border: 'none',
-                padding: '4px 2px',
-                transition: 'transform 0.12s ease'
+                padding: '2px 0'
               }}
               title={isFavorite ? 'Убрать из любимых' : 'Сохранить в любимые места'}
             >
@@ -227,8 +235,17 @@ export function PlaceModal({
             </button>
           </div>
 
-          {/* 2. Адрес, цены, время работы, соцсети */}
-          <div className="info-block pt-1 space-y-2.5 text-sm" style={{ fontWeight: 400 }}>
+          {/* 2. Данные (адрес, цены, время, соцсети) — ближе к плашкам (12px) */}
+          <div
+            className="info-block text-sm"
+            style={{
+              marginTop: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '5px',
+              fontWeight: 400
+            }}
+          >
             <p style={{ fontWeight: 400, margin: 0 }}>
               <span style={{ fontWeight: 600 }}>Адрес:</span>{' '}
               <a
@@ -291,21 +308,24 @@ export function PlaceModal({
             )}
           </div>
 
-          {/* 3. Описание */}
+          {/* 3. Описание — ближе к данным (10px) */}
           {cleanDescription && (
-            <p className="description pt-1 text-sm leading-relaxed">
+            <p
+              className="description text-sm leading-relaxed"
+              style={{ marginTop: '10px', marginBottom: 0 }}
+            >
               {cleanDescription}
             </p>
           )}
 
           {/* 4. Коллаж из 3 фото */}
-          <div style={{ paddingTop: '4px' }}>
+          <div style={{ marginTop: '14px' }}>
             <PhotoCollage images={collectedImages} singleUrl={selected.imageUrl} alt={title} />
           </div>
 
           {/* 5. Кнопки статуса */}
           {isSelectedPlace && (
-            <div className="status-actions pt-2" style={{ borderTop: 'none' }}>
+            <div className="status-actions" style={{ borderTop: 'none', marginTop: '14px', paddingTop: 0 }}>
               <button className="lime-button" onClick={() => onConfirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
               <button className="closed-button" onClick={() => onConfirm(true)}>ЗАКРЫЛОСЬ</button>
             </div>
