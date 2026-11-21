@@ -4,12 +4,33 @@ import {
   City,
   categories,
   buildGoogleMapsUrl,
-  buildYandexMapsUrl,
   formatPriceRange,
   formatDateSafe
 } from '../data/mockData';
 
-function PhotoCollage({ images, singleUrl, alt }: { images?: string[]; singleUrl?: string | null; alt: string }) {
+function getSocialLabel(url: string): string {
+  const u = url.toLowerCase();
+  if (u.includes('t.me') || u.includes('telegram')) return 'Telegram';
+  if (u.includes('vk.com') || u.includes('vkontakte')) return 'ВКонтакте';
+  if (u.includes('instagram.com')) return 'Instagram';
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
+  if (u.includes('avito.ru')) return 'Avito';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'Ссылка';
+  }
+}
+
+function PhotoCollage({
+  images,
+  singleUrl,
+  alt
+}: {
+  images?: string[];
+  singleUrl?: string | null;
+  alt: string;
+}) {
   const photos = (images && images.length ? images : singleUrl ? [singleUrl] : []).slice(0, 3);
 
   const renderSlot = (idx: number) => {
@@ -90,64 +111,94 @@ export function PlaceModal({
     : `${city.name} (посмотреть на карте)`;
 
   const rawRecord = selected as Record<string, any>;
-  const dbSocialLink = String(
-    rawRecord.social_link ||
-    rawRecord.social_url ||
-    rawRecord.url ||
-    rawRecord.website ||
-    rawRecord.link ||
-    ''
-  ).trim();
 
-  const socialLink = dbSocialLink || 'https://t.me/second_chance_place';
+  // Собираем фотографии из массива images или отдельных колонок image_1, image_2, image_3 из Supabase
+  const collectedImages: string[] = Array.isArray(rawRecord.images) && rawRecord.images.length
+    ? rawRecord.images
+    : [rawRecord.image_1, rawRecord.image_2, rawRecord.image_3, selected.imageUrl].filter(Boolean);
+
+  // Собираем несколько соцсетей: поддерживаем массив social_links или строку с разделителями (запятая / пробел / перенос)
+  const rawSocials: string[] = Array.isArray(rawRecord.social_links)
+    ? rawRecord.social_links
+    : String(
+        rawRecord.social_link ||
+        rawRecord.social_url ||
+        rawRecord.url ||
+        rawRecord.website ||
+        rawRecord.link ||
+        ''
+      )
+        .split(/[\s,;]+/)
+        .map(s => s.trim())
+        .filter(s => s.startsWith('http'));
+
+  const socialLinks = rawSocials.length > 0
+    ? rawSocials
+    : ['https://t.me/second_chance_place', 'https://vk.com/second_chance_place'];
+
   const googleMapsUrl = buildGoogleMapsUrl(rawAddress, city.name, selected.lat, selected.lng);
-  const yandexMapsUrl = buildYandexMapsUrl(rawAddress, city.name, title);
 
-  // Очищаем техническое описание из базы, если оно осталось от старого сида
   const cleanDescription = (selected.description || '')
     .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
     .trim();
 
+  // Единый аккуратный стиль для меток (не мелкий и не перегруженный)
+  const badgeStyle: React.CSSProperties = {
+    fontSize: '12px',
+    fontWeight: 500,
+    padding: '4px 10px',
+    border: '1px solid #000',
+    lineHeight: '1.2',
+    letterSpacing: '0.02em',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px'
+  };
+
   return (
     <div className="modalback" onClick={onClose}>
       <section className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
-        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '4px' }}>
+        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '6px' }}>
           <h2>{title}</h2>
           <button className="close-button" aria-label="Закрыть" onClick={onClose}>✕</button>
         </header>
 
         <div className="place-detail space-y-4">
-          {/* 1. Плашки категорий / формата + кнопка «Любимое» */}
-          <div className="detail-tags flex flex-wrap items-center gap-2">
+          {/* 1. Метки категорий / формата + кнопка «В любимые» */}
+          <div className="flex flex-wrap items-center gap-2">
             {isSelectedPlace ? (
               <>
-                <span className="stamp bg-[#CCFF00]">ПОСТОЯННО · МАГАЗИН</span>
+                <span style={{ ...badgeStyle, backgroundColor: '#CCFF00' }}>Постоянно · Магазин</span>
                 {(selected as Place).categories?.map(c => (
-                  <span className="stamp" key={c}>{categories.find(x => x[0] === c)?.[1] || c}</span>
+                  <span style={{ ...badgeStyle, backgroundColor: '#fff' }} key={c}>
+                    {categories.find(x => x[0] === c)?.[1] || c}
+                  </span>
                 ))}
-                {(selected as Place).is_point_verified && <span className="stamp">ТОЧКА ПРОВЕРЕНА</span>}
-                {(selected as Place).is_assortment_verified && <span className="stamp">АССОРТИМЕНТ ПОДТВЕРЖДЁН</span>}
+                {(selected as Place).is_point_verified && (
+                  <span style={{ ...badgeStyle, backgroundColor: '#fff' }}>Точка проверена</span>
+                )}
               </>
             ) : (
-              <span className="stamp bg-orange-400">СОБЫТИЕ / МАРКЕТ</span>
+              <span style={{ ...badgeStyle, backgroundColor: '#fb923c' }}>Событие / Маркет</span>
             )}
 
             <button
               type="button"
               onClick={() => onToggleFavorite(selected.id)}
-              className="stamp ml-auto cursor-pointer transition-colors"
+              className="ml-auto cursor-pointer transition-colors"
               style={{
-                backgroundColor: isFavorite ? '#CCFF00' : '#fff',
-                fontWeight: 600
+                ...badgeStyle,
+                backgroundColor: isFavorite ? '#CCFF00' : '#fff'
               }}
-              title="Сохранить в любимые места, чтобы следить за завозами"
+              title="Сохранить в любимые места"
             >
-              {isFavorite ? '♥ В ЛЮБИМЫХ' : '♡ В ЛЮБИМЫЕ'}
+              <span>{isFavorite ? '♥' : '♡'}</span>
+              <span>{isFavorite ? 'В любимых' : 'В любимые'}</span>
             </button>
           </div>
 
-          {/* 2. Адрес, цены, время работы / даты, соцсети — БЕЗ разделительных линий и с одинаковой жирностью */}
-          <div className="info-block pt-1 space-y-2 text-sm" style={{ fontWeight: 400 }}>
+          {/* 2. Адрес, цены, время работы (Google Карты без ссылки на Яндекс), соцсети */}
+          <div className="info-block pt-1 space-y-2.5 text-sm" style={{ fontWeight: 400 }}>
             <p style={{ fontWeight: 400, margin: 0 }}>
               <span style={{ fontWeight: 600 }}>Адрес:</span>{' '}
               <a
@@ -169,26 +220,8 @@ export function PlaceModal({
                 </p>
                 <p style={{ fontWeight: 400, margin: 0 }}>
                   <span style={{ fontWeight: 600 }}>Время работы:</span>{' '}
-                  {(selected as Place).opening_hours ? (
-                    <span>{(selected as Place).opening_hours} · </span>
-                  ) : null}
-                  <a
-                    href={googleMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline hover:bg-[#CCFF00] transition-colors"
-                  >
-                    Google Карты ↗
-                  </a>
-                  {' / '}
-                  <a
-                    href={yandexMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline hover:bg-[#CCFF00] transition-colors"
-                  >
-                    Яндекс.Карты ↗
-                  </a>
+                  {(selected as Place).opening_hours || 'Ежедневно, 11:00 – 20:00'}{' '}
+                  <span style={{ color: 'rgba(0,0,0,0.55)', fontSize: '12px' }}>(данные Google Карт)</span>
                 </p>
               </>
             ) : (
@@ -203,22 +236,33 @@ export function PlaceModal({
               </p>
             )}
 
-            {socialLink && (
-              <p style={{ fontWeight: 400, margin: 0 }}>
-                <span style={{ fontWeight: 600 }}>Социальные сети:</span>{' '}
-                <a
-                  href={socialLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline hover:bg-[#CCFF00] transition-colors break-all"
-                >
-                  {socialLink} ↗
-                </a>
-              </p>
+            {/* Несколько социальных сетей аккуратными плашками без запятых */}
+            {socialLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2" style={{ margin: 0 }}>
+                <span style={{ fontWeight: 600 }}>Социальные сети:</span>
+                {socialLinks.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline hover:bg-[#CCFF00] transition-colors"
+                    style={{
+                      fontSize: '13px',
+                      padding: '2px 8px',
+                      border: '1px solid rgba(0,0,0,0.4)',
+                      backgroundColor: '#fff',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    {getSocialLabel(link)} ↗
+                  </a>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* 3. Описание (показываем только если оно есть и не пустое) */}
+          {/* 3. Описание */}
           {cleanDescription && (
             <p className="description pt-1 text-sm leading-relaxed">
               {cleanDescription}
@@ -227,10 +271,10 @@ export function PlaceModal({
 
           {/* 4. Коллаж из 3 фото */}
           <div style={{ paddingTop: '4px' }}>
-            <PhotoCollage images={selected.images} singleUrl={selected.imageUrl} alt={title} />
+            <PhotoCollage images={collectedImages} singleUrl={selected.imageUrl} alt={title} />
           </div>
 
-          {/* 5. Кнопки статуса — без верхней линии */}
+          {/* 5. Кнопки статуса */}
           {isSelectedPlace && (
             <div className="status-actions pt-2" style={{ borderTop: 'none' }}>
               <button className="lime-button" onClick={() => onConfirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
