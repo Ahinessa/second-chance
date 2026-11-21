@@ -112,12 +112,10 @@ export function PlaceModal({
 
   const rawRecord = selected as Record<string, any>;
 
-  // Собираем фотографии из массива images или отдельных колонок image_1, image_2, image_3 из Supabase
   const collectedImages: string[] = Array.isArray(rawRecord.images) && rawRecord.images.length
     ? rawRecord.images
     : [rawRecord.image_1, rawRecord.image_2, rawRecord.image_3, selected.imageUrl].filter(Boolean);
 
-  // Собираем несколько соцсетей: поддерживаем массив social_links или строку с разделителями (запятая / пробел / перенос)
   const rawSocials: string[] = Array.isArray(rawRecord.social_links)
     ? rawRecord.social_links
     : String(
@@ -142,7 +140,6 @@ export function PlaceModal({
     .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
     .trim();
 
-  // Единый аккуратный стиль для меток (не мелкий и не перегруженный)
   const badgeStyle: React.CSSProperties = {
     fontSize: '12px',
     fontWeight: 500,
@@ -164,7 +161,7 @@ export function PlaceModal({
         </header>
 
         <div className="place-detail space-y-4">
-          {/* 1. Метки категорий / формата + кнопка «В любимые» */}
+          {/* 1. Метки категорий / формата + кнопка «В любимые» (текст без рамки + крупное сердечко в рамке) */}
           <div className="flex flex-wrap items-center gap-2">
             {isSelectedPlace ? (
               <>
@@ -185,19 +182,46 @@ export function PlaceModal({
             <button
               type="button"
               onClick={() => onToggleFavorite(selected.id)}
-              className="ml-auto cursor-pointer transition-colors"
+              className="ml-auto cursor-pointer group"
               style={{
-                ...badgeStyle,
-                backgroundColor: isFavorite ? '#CCFF00' : '#fff'
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                padding: 0
               }}
-              title="Сохранить в любимые места"
+              title={isFavorite ? 'Убрать из любимых' : 'Сохранить в любимые места'}
             >
-              <span>{isFavorite ? '♥' : '♡'}</span>
-              <span>{isFavorite ? 'В любимых' : 'В любимые'}</span>
+              <span
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#000'
+                }}
+              >
+                {isFavorite ? 'В любимых' : 'В любимые'}
+              </span>
+              <span
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  border: '1px solid #000',
+                  backgroundColor: isFavorite ? '#CCFF00' : '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  lineHeight: 1,
+                  transition: 'background-color 0.15s ease'
+                }}
+              >
+                {isFavorite ? '♥' : '♡'}
+              </span>
             </button>
           </div>
 
-          {/* 2. Адрес, цены, время работы (Google Карты без ссылки на Яндекс), соцсети */}
+          {/* 2. Адрес, цены, время работы, соцсети */}
           <div className="info-block pt-1 space-y-2.5 text-sm" style={{ fontWeight: 400 }}>
             <p style={{ fontWeight: 400, margin: 0 }}>
               <span style={{ fontWeight: 600 }}>Адрес:</span>{' '}
@@ -236,7 +260,6 @@ export function PlaceModal({
               </p>
             )}
 
-            {/* Несколько социальных сетей аккуратными плашками без запятых */}
             {socialLinks.length > 0 && (
               <div className="flex flex-wrap items-center gap-2" style={{ margin: 0 }}>
                 <span style={{ fontWeight: 600 }}>Социальные сети:</span>
