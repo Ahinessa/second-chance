@@ -19,6 +19,7 @@ import {
 } from './data/mockData';
 import { SizeTable } from './components/SizeTable';
 import { PlaceModal } from './components/PlaceModal';
+import { AuthModal } from './components/AuthModal';
 
 function validCategoriesStored() {
   const v = sessionStorage.getItem('sc-category');
@@ -78,9 +79,6 @@ export default function App() {
   });
   const [user, setUser] = useState<any>(null);
   const [auth, setAuth] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
   const [sizes, setSizes] = useState(false);
   const [add, setAdd] = useState(false);
   const [notice, setNotice] = useState('');
@@ -207,17 +205,6 @@ export default function App() {
     const n = route.some(x => x.id === p.id) ? route.filter(x => x.id !== p.id) : [...route, p];
     setRoute(n);
     localStorage.setItem('sc-route', JSON.stringify(n));
-  }
-
-  async function login() {
-    const result = authMode === 'login'
-      ? await supabase.auth.signInWithPassword({ email, password: pw })
-      : await supabase.auth.signUp({ email, password: pw });
-    if (result.error) setNotice(result.error.message);
-    else {
-      setNotice(authMode === 'signup' ? 'Проверьте email для подтверждения регистрации' : 'Вы вошли!');
-      setAuth(false);
-    }
   }
 
   async function addPlace(e: React.FormEvent<HTMLFormElement>) {
@@ -466,18 +453,13 @@ export default function App() {
       {sizes && <Modal title="ТАБЛИЦА РАЗМЕРОВ" close={() => setSizes(false)}><SizeTable /></Modal>}
 
       {auth && (
-        <Modal title="АККАУНТ SECOND CHANCE" close={() => setAuth(false)}>
-          <div className="auth-tabs">
-            <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')}>ВХОД</button>
-            <button className={authMode === 'signup' ? 'active' : ''} onClick={() => setAuthMode('signup')}>РЕГИСТРАЦИЯ</button>
-          </div>
-          <form onSubmit={e => { e.preventDefault(); login(); }} className="auth-form">
-            <label>Email<input type="email" required placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} /></label>
-            <label>Пароль<input type="password" required minLength={6} placeholder="Минимум 6 символов" value={pw} onChange={e => setPw(e.target.value)} /></label>
-            <button className="lime-button">{authMode === 'login' ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'}</button>
-          </form>
-          {user && <button className="outline-button mt-3" onClick={() => supabase.auth.signOut()}>ВЫЙТИ</button>}
-        </Modal>
+        <AuthModal
+          user={user}
+          favoritesCount={favorites.length}
+          onClose={() => setAuth(false)}
+          onOpenAddPlace={() => setAdd(true)}
+          onNotify={setNotice}
+        />
       )}
 
       {add && (
