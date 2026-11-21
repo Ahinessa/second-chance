@@ -24,6 +24,12 @@
           card.innerHTML='<h1>SECOND CHANCE</h1><p><strong>Не удалось загрузить приложение.</strong></p><p style="margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere">'+String(message||'Неизвестная ошибка').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+'</p><button onclick="location.reload()" style="margin-top:16px;padding:10px;border:2px solid #111;background:#fff;font-weight:bold">ОБНОВИТЬ</button>';
         }
         window.addEventListener('error',function(e){if(e.target&&e.target.tagName==='SCRIPT'){showFailure('Не загрузился JavaScript-файл: '+(e.target.src||'script'));}else if(e.message){showFailure(e.message);}});
+        window.setTimeout(function(){
+          var card=document.getElementById('startup-card');
+          if(card && card.innerText.indexOf('Загружаем приложение')!==-1){
+            showFailure('JavaScript приложения не запустился за 12 секунд. Вероятно, Cloudflare Pages публикует исходный код вместо сборки Vite (dist), либо модуль /src/main.tsx не загружается.');
+          }
+        },12000);
         window.addEventListener('unhandledrejection',function(e){showFailure(e.reason&&e.reason.message||e.reason||'Unhandled promise rejection');});
       })();
     </script>
