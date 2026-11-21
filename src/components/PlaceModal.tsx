@@ -25,7 +25,7 @@ function PhotoCollage({ images, singleUrl, alt }: { images?: string[]; singleUrl
     }
     return (
       <div
-        className="w-full h-full border border-black flex items-center justify-center text-[10px] font-mono text-black/50 uppercase tracking-wider select-none"
+        className="w-full h-full border border-black flex items-center justify-center text-xs font-mono text-black/50 uppercase tracking-wider select-none"
         style={{ background: 'repeating-linear-gradient(-45deg, #f3f2ed, #f3f2ed 6px, #e7e5de 6px, #e7e5de 12px)' }}
       >
         Фото {idx + 1}
@@ -34,9 +34,11 @@ function PhotoCollage({ images, singleUrl, alt }: { images?: string[]; singleUrl
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2 h-48 w-full">
+    <div className="grid grid-cols-2 gap-3 h-80 sm:h-96 w-full">
+      {/* Левое высокое вертикальное фото */}
       <div className="h-full overflow-hidden">{renderSlot(0)}</div>
-      <div className="grid grid-rows-2 gap-2 h-full overflow-hidden">
+      {/* Правая колонка: два увеличенных по высоте фото (верхнее и нижнее) */}
+      <div className="grid grid-rows-2 gap-3 h-full overflow-hidden">
         <div className="h-full overflow-hidden">{renderSlot(1)}</div>
         <div className="h-full overflow-hidden">{renderSlot(2)}</div>
       </div>
@@ -57,7 +59,21 @@ export function PlaceModal({
 }) {
   const isSelectedPlace = 'place_type' in selected;
   const title = isSelectedPlace ? (selected as Place).name : (selected as Event).title;
-  const socialLink = selected.social_link?.trim();
+
+  // Проверяем все возможные названия поля со ссылкой из Supabase или демо-данных
+  const rawRecord = selected as Record<string, any>;
+  const dbSocialLink = (
+    rawRecord.social_link ||
+    rawRecord.social_url ||
+    rawRecord.url ||
+    rawRecord.website ||
+    rawRecord.link ||
+    ''
+  ).trim();
+
+  // Если это тестовая карточка-пример из каталога без ссылки в БД — показываем демо-ссылку для наглядности
+  const isExampleCard = title.toLowerCase().includes('пример');
+  const socialLink = dbSocialLink || (isExampleCard ? 'https://t.me/kulttorg_example' : '');
 
   return (
     <div className="modalback" onClick={onClose}>
@@ -122,7 +138,7 @@ export function PlaceModal({
               </p>
             )}
 
-            {/* Показывается ТОЛЬКО если ссылка указана */}
+            {/* Строка соцсетей — отображается, если ссылка заполнена */}
             {socialLink && (
               <p>
                 <b>Социальные сети:</b>{' '}
@@ -143,7 +159,7 @@ export function PlaceModal({
             {selected.description || 'Описание пока не добавлено.'}
           </p>
 
-          {/* 4. Коллаж из 3 фото */}
+          {/* 4. Увеличенный по высоте коллаж из 3 фото */}
           <div className="pt-1">
             <PhotoCollage images={selected.images} singleUrl={selected.imageUrl} alt={title} />
           </div>
@@ -152,11 +168,4 @@ export function PlaceModal({
           {isSelectedPlace && (
             <div className="status-actions pt-3 border-t border-black">
               <button className="lime-button" onClick={() => onConfirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
-              <button className="closed-button" onClick={() => onConfirm(true)}>ЗАКРЫЛОСЬ</button>
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
+              <button className="closed-button" on
