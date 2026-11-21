@@ -162,23 +162,26 @@ export function PlaceModal({
   return (
     <div className="modalback" onClick={onClose}>
       <section className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
-        {/* Шапка подтянута максимально близко к фильтрам */}
+        {/* Шапка: шрифт названия чуть больше (26px), отступ снизу обнулён, чтобы симметрию задавал блок фильтров */}
         <header
           className="modal-head"
           style={{
             borderBottom: 'none',
             paddingBottom: 0,
-            marginBottom: '6px',
+            marginBottom: 0,
             alignItems: 'center'
           }}
         >
-          <h2 style={{ fontSize: '22px', lineHeight: '1.2', fontWeight: 700, margin: 0 }}>{title}</h2>
+          <h2 style={{ fontSize: '26px', lineHeight: '1.2', fontWeight: 700, margin: 0 }}>{title}</h2>
           <button className="close-button" aria-label="Закрыть" onClick={onClose}>✕</button>
         </header>
 
         <div className="place-detail">
-          {/* 1. Фильтры и кнопка «В ЛЮБИМЫЕ» вплотную под названием */}
-          <div className="flex flex-wrap items-center gap-2" style={{ marginTop: 0 }}>
+          {/* 1. Фильтры в рамках: строго одинаковое расстояние сверху (14px) и снизу (14px) */}
+          <div
+            className="flex flex-wrap items-center gap-2"
+            style={{ marginTop: '14px', marginBottom: '14px' }}
+          >
             {isSelectedPlace ? (
               <>
                 <span style={{ ...badgeStyle, backgroundColor: '#CCFF00' }}>Постоянно · Магазин</span>
@@ -205,7 +208,7 @@ export function PlaceModal({
                 gap: '8px',
                 background: 'transparent',
                 border: 'none',
-                padding: '2px 0'
+                padding: 0
               }}
               title={isFavorite ? 'Убрать из любимых' : 'Сохранить в любимые места'}
             >
@@ -235,11 +238,12 @@ export function PlaceModal({
             </button>
           </div>
 
-          {/* 2. Данные (адрес, цены, время, соцсети) — ближе к плашкам (12px) */}
+          {/* 2. Основной блок данных */}
           <div
             className="info-block text-sm"
             style={{
-              marginTop: '12px',
+              margin: 0,
+              padding: 0,
               display: 'flex',
               flexDirection: 'column',
               gap: '5px',
@@ -308,11 +312,16 @@ export function PlaceModal({
             )}
           </div>
 
-          {/* 3. Описание — ближе к данным (10px) */}
+          {/* 3. Нижний текст (описание) — максимально близко к основному блоку (8px), убраны старые отступы класса description */}
           {cleanDescription && (
             <p
-              className="description text-sm leading-relaxed"
-              style={{ marginTop: '10px', marginBottom: 0 }}
+              className="text-sm leading-relaxed"
+              style={{
+                marginTop: '8px',
+                marginBottom: 0,
+                paddingTop: 0,
+                borderTop: 'none'
+              }}
             >
               {cleanDescription}
             </p>
