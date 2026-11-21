@@ -251,4 +251,277 @@ export default function App() {
     const matchedCity = cities.find(c => norm(c.name) === norm(welcomeCity)) || seed.find(c => norm(c.name) === norm(welcomeCity));
     if (matchedCity) {
       setCity(matchedCity);
+    } else {
+      await citySearch(welcomeCity);
     }
+
+    setWelcome(false);
+  }
+
+  const tabs = [
+    ['place', 'МЕСТА', 'Постоянные магазины, секонды, свопы'],
+    ['market', 'МАРКЕТЫ', 'Поп-ап ярмарки, гараж-сейлы на 1–2 дня'],
+    ['online', 'ОНЛАЙН', 'Сайты, Авито, ТГ-каналы']
+  ];
+
+  return (
+    <div className="min-h-screen">
+      <header className="site-header">
+        <div>
+          <h1>SECOND <span>CHANCE</span></h1>
+          <p className="mono">КАРТА ОСОЗНАННОГО ПОТРЕБЛЕНИЯ</p>
+        </div>
+        <div className="header-actions">
+          <button className="stamp" onClick={() => setSizes(true)}>ТАБЛИЦА РАЗМЕРОВ</button>
+          <button className="stamp" onClick={() => setAuth(true)}>{user ? 'ПРОФИЛЬ' : 'ВХОД / РЕГИСТРАЦИЯ'}</button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4">
+        <nav className="compact-nav w-full">
+          <div className="tab-row format-tabs w-full">
+            {tabs.map(([t, n, sub]) => (
+              <button
+                key={t}
+                className={'main-tab ' + (tab === t ? 'active' : '')}
+                onClick={() => { setTab(t); sessionStorage.setItem('sc-tab', t); }}
+              >
+                <strong>{n}</strong>
+                <small>{sub}</small>
+              </button>
+            ))}
+          </div>
+          <div className="quick-filters filter-controls w-full">
+            <button className="filter-chip" onClick={() => setWelcome(true)}>ГОРОД: {city.name} ✎</button>
+            <button className="filter-chip" onClick={() => setWelcome(true)}>КАТЕГОРИЯ: {categories.find(x => x[0] === cat)?.[1]} ✎</button>
+            {tab !== 'online' && (
+              <button
+                className="filter-chip"
+                onClick={() => setOnlyFavs(!onlyFavs)}
+                style={{ backgroundColor: onlyFavs ? '#CCFF00' : undefined }}
+              >
+                {onlyFavs ? '♥ ЛЮБИМЫЕ' : '♡ ЛЮБИМЫЕ'} {favorites.length > 0 ? `(${favorites.length})` : ''}
+              </button>
+            )}
+            <button className="filter-chip reset-filters" onClick={resetFilters}>СБРОСИТЬ ФИЛЬТРЫ</button>
+            {tab !== 'online' && (
+              <div className="view-switch ml-auto">
+                <button className={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>КАРТА</button>
+                <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')}>СПИСОК</button>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {(tab === 'place' || tab === 'market') && (
+          <div className={view === 'map' ? 'grid lg:grid-cols-2 gap-5 w-full' : 'w-full col-span-full'}>
+            {view === 'map' && (
+              <div className={tab === 'market' ? 'map market-map' : 'map'}>
+                <MapContainer key={city.id} center={[city.lat, city.lng]} zoom={13}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+                  {tab === 'place' && list.map(p => p.lat && p.lng && (
+                    <Marker key={p.id} position={[p.lat, p.lng]} icon={placeIcon}>
+                      <Popup>
+                        <b>{p.name.replace(/\(пример карточки\)/gi, '').trim()}</b><br />
+                        ПОСТОЯННО · Магазин<br />
+                        <button className="popup-action" onClick={() => setSelected(p)}>ОТКРЫТЬ КАРТОЧКУ</button>
+                      </Popup>
+                    </Marker>
+                  ))}
+                  {tab === 'market' && eventList.map(e => e.lat && e.lng && (
+                    <Marker key={e.id} position={[e.lat, e.lng]} icon={marketIcon}>
+                      <Popup>
+                        <b>{e.title}</b><br />
+                        СОБЫТИЕ / 1 ДЕНЬ<br />
+                        {formatDateSafe(e.start_date)}<br />
+                        <button className="popup-action" onClick={() => setSelected(e)}>ОТКРЫТЬ КАРТОЧКУ</button>
+                      </Popup>
+                    </Marker>
+                  ))}
+                  {tab === 'place' && !onlyFavs && osm.map(o => {
+                    const lat = o.lat || o.center?.lat, lon = o.lon || o.center?.lon;
+                    return lat && lon ? (
+                      <Marker key={o.id} position={[lat, lon]} icon={o.tags?.amenity === 'marketplace' ? marketIcon : placeIcon}>
+                        <Popup>
+                          <b>{o.tags?.name || 'Место OSM'}</b><br />
+                          {o.tags?.amenity === 'marketplace' ? 'МАРКЕТ' : 'ПОСТОЯННО · Магазин'}<br />
+                          <span>Ассортимент не проверен</span>
+                        </Popup>
+                      </Marker>
+                    ) : null;
+                  })}
+                </MapContainer>
+              </div>
+            )}
+
+            <div className={view === 'list' ? 'place-list-grid w-full' : 'space-y-4'}>
+              {(tab === 'place' ? list : eventList).map(item => {
+                const isMarket = tab === 'market';
+                const rawName = isMarket ? (item as Event).title : (item as Place).name;
+                const cardName = rawName.replace(/\(пример карточки\)/gi, '').trim();
+                const rawAddress = (isMarket ? (item as Event).address : (item as Place).address || '').replace(/\(пример адреса\)/gi, '').trim();
+                const cardAddress = rawAddress ? (rawAddress.toLowerCase().includes(city.name.toLowerCase()) ? rawAddress : `${city.name}, ${rawAddress}`) : `${city.name} (адрес уточняется)`;
+                const cardDescription = (item.description || '')
+                  .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
+                  .trim();
+                const cardPrice = isMarket ? 'Вход / цены уточняйте' : formatPriceRange(item as Place, '₽');
+                const startStr = isMarket ? formatDateSafe((item as Event).start_date) : '';
+                const endStr = isMarket ? formatDateSafe((item as Event).end_date) : '';
+                const cardDate = startStr ? (endStr && endStr !== startStr ? `${startStr} – ${endStr}` : startStr) : 'Дата уточняется';
+                const isFav = favorites.includes(item.id);
+
+                const routeItem = isMarket
+                  ? ({ id: item.id, name: cardName, city_id: city.id, place_type: 'market', categories: [], price_min: 0, price_max: 0, price_note: cardPrice, address: cardAddress, lat: (item as Event).lat ?? null, lng: (item as Event).lng ?? null, description: cardDescription, status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null } as Place)
+                  : (item as Place);
+
+                return (
+                  <article className="card place-card" key={item.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={'format-tag ' + (isMarket ? 'market-tag' : '')}>
+                        {isMarket ? 'СОБЫТИЕ / 1 ДЕНЬ' : 'ПОСТОЯННО · МАГАЗИН'}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(item.id)}
+                        className="stamp cursor-pointer"
+                        style={{ backgroundColor: isFav ? '#CCFF00' : '#fff' }}
+                        title={isFav ? 'Убрать из любимых' : 'Добавить в любимые'}
+                      >
+                        {isFav ? '♥' : '♡'}
+                      </button>
+                    </div>
+                    <h2>{cardName}</h2>
+                    <p className="place-address">⌖ {cardAddress}</p>
+                    {isMarket && <p className="event-date mono">ДАТА: {cardDate}</p>}
+                    {cardDescription && <p>{cardDescription}</p>}
+                    {!isMarket && (item as Place).live_signal_text && (item as Place).live_signal_expires_at && new Date((item as Place).live_signal_expires_at!) > new Date() && (
+                      <div className="signal p-2 mt-2 mono">🔥 {(item as Place).live_signal_text}</div>
+                    )}
+                    <p className="mono text-xs">{cardPrice}</p>
+                    <div className="card-actions">
+                      <button className="lime-button" onClick={() => setSelected(item)}>ОТКРЫТЬ КАРТОЧКУ</button>
+                      <button className="outline-button" onClick={() => routeToggle(routeItem)}>
+                        {route.some(x => x.id === item.id) ? '✓' : '+'} В МАРШРУТ
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+
+              {tab === 'place' && !list.length && <EmptyState onReset={() => { setCat('all'); setOnlyFavs(false); sessionStorage.setItem('sc-category', 'all'); }} />}
+              {tab === 'market' && !eventList.length && <EmptyState onReset={resetFilters} />}
+            </div>
+          </div>
+        )}
+
+        {tab === 'place' && view === 'map' && !onlyFavs && osm.length > 0 && (
+          <section className="osm-note">
+            <b className="mono">[ OSM — АССОРТИМЕНТ НЕ ПРОВЕРЕН ]</b>
+            {osm.slice(0, 15).map(o => <p key={o.id}>{o.tags?.name || o.tags?.shop || 'Место OSM'}</p>)}
+          </section>
+        )}
+
+        {tab === 'online' && (
+          <div className="grid md:grid-cols-3 gap-4">
+            {onlineList.map(m => (
+              <article className="card place-card" key={m.id}>
+                <div className="format-tag online-tag">ОНЛАЙН</div>
+                <h2>{m.name}</h2>
+                <p>{m.guide_text}</p>
+                <div className="flex flex-wrap gap-2 my-2">
+                  <span className="stamp">{m.requires_local_phone ? 'МЕСТНАЯ SIM' : 'SIM НЕ НУЖНА'}</span>
+                  <span className="stamp">{m.has_delivery ? 'ДОСТАВКА' : 'УТОЧНИТЬ'}</span>
+                </div>
+                <a className="lime-button inline-block mt-3 text-center" href={m.url} target="_blank" rel="noreferrer">
+                  ПЕРЕЙТИ В СОЦСЕТИ / НА САЙТ ↗
+                </a>
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <footer className="border-t-2 border-black p-4 mono text-xs">SECOND CHANCE · BETA</footer>
+
+      {route.length > 0 && (
+        <aside className="fixed bottom-3 right-3 z-[900] receipt p-3 w-72">
+          <b>ЧЕК ПРОГУЛКИ · {route.length} ТОЧЕК</b>
+          {route.map(p => <p key={p.id}>{p.name} <button onClick={() => routeToggle(p)}>−</button></p>)}
+          <p>Оценка: {route.reduce((a, p) => a + (p.price_min || 0), 0)}–{route.reduce((a, p) => a + (p.price_max || 0), 0)} ₽</p>
+          <button onClick={() => { setRoute([]); localStorage.removeItem('sc-route'); }}>ОЧИСТИТЬ</button>
+        </aside>
+      )}
+
+      {selected && (
+        <PlaceModal
+          selected={selected}
+          city={city}
+          isFavorite={favorites.includes(selected.id)}
+          onToggleFavorite={toggleFavorite}
+          onClose={() => setSelected(null)}
+          onConfirm={confirm}
+        />
+      )}
+
+      {sizes && <Modal title="ТАБЛИЦА РАЗМЕРОВ" close={() => setSizes(false)}><SizeTable /></Modal>}
+
+      {auth && (
+        <Modal title="АККАУНТ SECOND CHANCE" close={() => setAuth(false)}>
+          <div className="auth-tabs">
+            <button className={authMode === 'login' ? 'active' : ''} onClick={() => setAuthMode('login')}>ВХОД</button>
+            <button className={authMode === 'signup' ? 'active' : ''} onClick={() => setAuthMode('signup')}>РЕГИСТРАЦИЯ</button>
+          </div>
+          <form onSubmit={e => { e.preventDefault(); login(); }} className="auth-form">
+            <label>Email<input type="email" required placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} /></label>
+            <label>Пароль<input type="password" required minLength={6} placeholder="Минимум 6 символов" value={pw} onChange={e => setPw(e.target.value)} /></label>
+            <button className="lime-button">{authMode === 'login' ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'}</button>
+          </form>
+          {user && <button className="outline-button mt-3" onClick={() => supabase.auth.signOut()}>ВЫЙТИ</button>}
+        </Modal>
+      )}
+
+      {add && (
+        <Modal title="ДОБАВИТЬ МЕСТО" close={() => setAdd(false)}>
+          <form onSubmit={addPlace} className="auth-form">
+            <input name="name" required placeholder="Название" />
+            <input name="address" placeholder="Адрес" />
+            <textarea name="description" placeholder="Описание" />
+            <select name="category">{categories.slice(1).map(([id, n]) => <option value={id} key={id}>{n}</option>)}</select>
+            <button className="lime-button">ОТПРАВИТЬ НА МОДЕРАЦИЮ</button>
+          </form>
+        </Modal>
+      )}
+
+      {user && <button className="fixed bottom-3 left-3 lime-button z-50" onClick={() => setAdd(true)}>+ ДОБАВИТЬ</button>}
+      {notice && <button className="toast" onClick={() => setNotice('')}>{notice} ×</button>}
+
+      {welcome && (
+        <div className="modalback welcome-backdrop">
+          <section className="modal welcome-modal" onClick={e => e.stopPropagation()}>
+            <p className="mono text-xs">SECOND CHANCE / СТАРТ</p>
+            <h2>01 / ГДЕ?</h2>
+            <div className="city-buttons">
+              {QUICK_CITIES.map(c => (
+                <button key={c} className={welcomeCity === c ? 'active' : ''} onClick={() => setWelcomeCity(c)}>{c}</button>
+              ))}
+            </div>
+            <label className="mono">ИЛИ ВВЕДИТЕ ДРУГОЙ ГОРОД</label>
+            <input
+              className="welcome-input"
+              placeholder="Название города"
+              value={QUICK_CITIES.includes(welcomeCity) ? '' : welcomeCity}
+              onChange={e => setWelcomeCity(e.target.value)}
+            />
+            <h2>02 / ЧТО?</h2>
+            <div className="category-buttons">
+              {categories.map(([id, label]) => (
+                <button key={id} className={welcomeCat === id ? 'active' : ''} onClick={() => setWelcomeCat(id)}>{label}</button>
+              ))}
+            </div>
+            <button className="lime-button welcome-submit" onClick={applyWelcome}>ПЕРЕЙТИ К КАРТЕ →</button>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
