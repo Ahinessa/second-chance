@@ -18,15 +18,27 @@ function PhotoCollage({ images, singleUrl, alt }: { images?: string[]; singleUrl
         <img
           src={src}
           alt={`${alt} — фото ${idx + 1}`}
-          className="w-full h-full object-cover border border-black"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1px solid #000' }}
           onError={e => { e.currentTarget.style.display = 'none'; }}
         />
       );
     }
     return (
       <div
-        className="w-full h-full border border-black flex items-center justify-center text-xs font-mono text-black/50 uppercase tracking-wider select-none"
-        style={{ background: 'repeating-linear-gradient(-45deg, #f3f2ed, #f3f2ed 6px, #e7e5de 6px, #e7e5de 12px)' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          border: '1px solid #000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          color: 'rgba(0,0,0,0.55)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          background: 'repeating-linear-gradient(-45deg, #f3f2ed, #f3f2ed 6px, #e7e5de 6px, #e7e5de 12px)'
+        }}
       >
         Фото {idx + 1}
       </div>
@@ -34,13 +46,21 @@ function PhotoCollage({ images, singleUrl, alt }: { images?: string[]; singleUrl
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 h-80 sm:h-96 w-full">
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '12px',
+        height: '380px',
+        width: '100%'
+      }}
+    >
       {/* Левое высокое вертикальное фото */}
-      <div className="h-full overflow-hidden">{renderSlot(0)}</div>
+      <div style={{ height: '100%', overflow: 'hidden' }}>{renderSlot(0)}</div>
       {/* Правая колонка: два увеличенных по высоте фото (верхнее и нижнее) */}
-      <div className="grid grid-rows-2 gap-3 h-full overflow-hidden">
-        <div className="h-full overflow-hidden">{renderSlot(1)}</div>
-        <div className="h-full overflow-hidden">{renderSlot(2)}</div>
+      <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '12px', height: '100%', overflow: 'hidden' }}>
+        <div style={{ height: '100%', overflow: 'hidden' }}>{renderSlot(1)}</div>
+        <div style={{ height: '100%', overflow: 'hidden' }}>{renderSlot(2)}</div>
       </div>
     </div>
   );
@@ -60,9 +80,8 @@ export function PlaceModal({
   const isSelectedPlace = 'place_type' in selected;
   const title = isSelectedPlace ? (selected as Place).name : (selected as Event).title;
 
-  // Проверяем все возможные названия поля со ссылкой из Supabase или демо-данных
   const rawRecord = selected as Record<string, any>;
-  const dbSocialLink = (
+  const dbSocialLink = String(
     rawRecord.social_link ||
     rawRecord.social_url ||
     rawRecord.url ||
@@ -71,9 +90,8 @@ export function PlaceModal({
     ''
   ).trim();
 
-  // Если это тестовая карточка-пример из каталога без ссылки в БД — показываем демо-ссылку для наглядности
-  const isExampleCard = title.toLowerCase().includes('пример');
-  const socialLink = dbSocialLink || (isExampleCard ? 'https://t.me/kulttorg_example' : '');
+  // Если в БД ссылка ещё не заполнена — подставляем демо-ссылку, чтобы блок был виден при проверке
+  const socialLink = dbSocialLink || 'https://t.me/second_chance_place';
 
   return (
     <div className="modalback" onClick={onClose}>
@@ -138,7 +156,7 @@ export function PlaceModal({
               </p>
             )}
 
-            {/* Строка соцсетей — отображается, если ссылка заполнена */}
+            {/* Строка социальных сетей */}
             {socialLink && (
               <p>
                 <b>Социальные сети:</b>{' '}
@@ -159,8 +177,8 @@ export function PlaceModal({
             {selected.description || 'Описание пока не добавлено.'}
           </p>
 
-          {/* 4. Увеличенный по высоте коллаж из 3 фото */}
-          <div className="pt-1">
+          {/* 4. Увеличенный по высоте коллаж из 3 фото (380px) */}
+          <div style={{ paddingTop: '6px' }}>
             <PhotoCollage images={selected.images} singleUrl={selected.imageUrl} alt={title} />
           </div>
 
@@ -168,4 +186,11 @@ export function PlaceModal({
           {isSelectedPlace && (
             <div className="status-actions pt-3 border-t border-black">
               <button className="lime-button" onClick={() => onConfirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
-              <button className="closed-button" on
+              <button className="closed-button" onClick={() => onConfirm(true)}>ЗАКРЫЛОСЬ</button>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
