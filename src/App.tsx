@@ -2,41 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { supabase } from './lib/supabase';
-
-type City = { id: string; name: string; country: string; currency: string; slug: string; lat: number; lng: number };
-type Place = { id: string; city_id: string; name: string; place_type: string; categories: string[]; price_min: number | null; price_max: number | null; price_note: string | null; address: string | null; lat: number | null; lng: number | null; description: string | null; status: string; is_point_verified: boolean; is_assortment_verified: boolean; owner_id: string | null; live_signal_text: string | null; live_signal_expires_at: string | null; imageUrl?: string | null; opening_hours?: string | null; social_link?: string | null };
-type Event = { id: string; city_id?: string; title: string; description: string; start_date: string; end_date: string; social_link: string; imageUrl?: string | null; lat?: number | null; lng?: number | null; address?: string | null };
-type Market = { id: string; city_id?: string | null; name: string; url: string; guide_text: string; requires_local_phone: boolean; has_delivery: boolean };
-
-const categories = [
-  ['all', 'Всё подряд'],
-  ['clothes', 'Одежда'],
-  ['home', 'Дом'],
-  ['media', 'Книги и винил'],
-  ['antiques', 'Антиквариат'],
-  ['flea', 'Разное']
-] as const;
-
-const validTabs = ['place', 'market', 'online'];
-const norm = (v: string | undefined | null) => String(v ?? '').trim().toLowerCase();
-
-const mockPlaces = (city: City): Place[] => [
-  { id: 'demo-' + city.slug + '-1', city_id: city.id, name: city.name + ' · Секонд-хенд «Второй круг»', place_type: 'shop', categories: ['clothes'], price_min: 300, price_max: 1500, price_note: '300–1500 ' + city.currency, address: city.name + ', Центральная улица, 12', lat: city.lat + 0.006, lng: city.lng + 0.004, description: 'Демо-карточка для проверки фильтров и карты. Не реальное место.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Ежедневно, 11:00 – 21:00', social_link: 'https://t.me/' },
-  { id: 'demo-' + city.slug + '-2', city_id: city.id, name: city.name + ' · Винтаж и дом', place_type: 'shop', categories: ['home', 'antiques'], price_min: 500, price_max: 3000, price_note: '500–3000 ' + city.currency, address: city.name + ', Улица рынка, 8', lat: city.lat - 0.005, lng: city.lng + 0.007, description: 'Демо-карточка: винтаж, вещи для дома и декор.', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Вт–Вс, 12:00 – 20:00', social_link: 'https://t.me/' },
-  { id: 'demo-' + city.slug + '-3', city_id: city.id, name: city.name + ' · Обмен вещами', place_type: 'swap', categories: ['clothes', 'flea'], price_min: 0, price_max: 0, price_note: 'Бесплатно / обмен', address: city.name + ', Парк, зона встреч', lat: city.lat - 0.004, lng: city.lng - 0.006, description: 'Демо-карточка для теста фильтра «Разное».', status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null, opening_hours: 'Сб–Вс, 13:00 – 18:00', social_link: 'https://t.me/' }
-];
-
-const mockEvents = (city: City): Event[] => [
-  { id: 'demo-market-' + city.slug + '-1', city_id: city.id, title: city.name + ' · Гараж-сейл', address: city.name + ', Арт-пространство, 5', description: 'Демо-событие для проверки вкладки. Не является реальным мероприятием.', start_date: new Date(Date.now() + 86400000).toISOString(), end_date: new Date(Date.now() + 86400000 * 2).toISOString(), social_link: 'https://t.me/', lat: city.lat + 0.01, lng: city.lng - 0.006 },
-  { id: 'demo-market-' + city.slug + '-2', city_id: city.id, title: city.name + ' · Винтажный маркет', address: city.name + ', Центральный двор', description: 'Тестовая карточка маркета.', start_date: new Date(Date.now() + 86400000 * 4).toISOString(), end_date: new Date(Date.now() + 86400000 * 4).toISOString(), social_link: 'https://t.me/', lat: city.lat - 0.008, lng: city.lng + 0.003 },
-  { id: 'demo-market-' + city.slug + '-3', city_id: city.id, title: city.name + ' · Своп выходного дня', address: city.name + ', Культурный центр', description: 'Демо-событие для визуальной проверки.', start_date: new Date(Date.now() + 86400000 * 7).toISOString(), end_date: new Date(Date.now() + 86400000 * 7).toISOString(), social_link: 'https://t.me/', lat: city.lat + 0.002, lng: city.lng + 0.009 }
-];
-
-const mockOnline = (city: City): Market[] => [
-  { id: 'demo-online-' + city.slug + '-1', city_id: city.id, name: 'Avito / KupujemProdajem', url: city.slug === 'kazan' ? 'https://www.avito.ru' : 'https://www.kupujemprodajem.com', guide_text: 'Демо-подборка площадок для города. Проверяйте продавца и условия доставки.', requires_local_phone: city.slug !== 'kazan', has_delivery: true },
-  { id: 'demo-online-' + city.slug + '-2', city_id: city.id, name: 'Telegram · локальные барахолки', url: 'https://t.me/', guide_text: 'Поиск локальных каналов и групп. Демо-карточка.', requires_local_phone: false, has_delivery: false },
-  { id: 'demo-online-' + city.slug + '-3', city_id: city.id, name: 'Facebook Marketplace', url: 'https://www.facebook.com/marketplace/', guide_text: 'Демо-карточка онлайн-площадки.', requires_local_phone: false, has_delivery: false }
-];
+import {
+  City,
+  Place,
+  Event,
+  Market,
+  categories,
+  validTabs,
+  norm,
+  seed,
+  mockPlaces,
+  mockEvents,
+  mockOnline,
+  formatDateSafe,
+  formatPriceRange
+} from './data/mockData';
+import { SizeTable } from './components/SizeTable';
+import { PlaceModal } from './components/PlaceModal';
 
 function validCategoriesStored() {
   const v = sessionStorage.getItem('sc-category');
@@ -47,38 +29,6 @@ function validTabStored() {
   const v = sessionStorage.getItem('sc-tab');
   return validTabs.includes(v || '') ? v : 'place';
 }
-
-function formatDateSafe(dateStr?: string) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU');
-}
-
-function buildGoogleMapsUrl(address: string | null | undefined, cityName: string, lat?: number | null, lng?: number | null) {
-  if (address && address.trim()) {
-    const query = address.toLowerCase().includes(cityName.toLowerCase()) ? address : `${cityName}, ${address}`;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-  }
-  if (lat != null && lng != null) {
-    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-  }
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cityName)}`;
-}
-
-function formatPriceRange(p: Place, currency: string) {
-  if (p.price_min != null && p.price_max != null) {
-    if (p.price_min === 0 && p.price_max === 0) return 'Бесплатно / обмен';
-    return `${p.price_min}–${p.price_max} ${currency}`.trim();
-  }
-  if (p.price_min != null) return `от ${p.price_min} ${currency}`.trim();
-  if (p.price_max != null) return `до ${p.price_max} ${currency}`.trim();
-  return p.price_note || 'Диапазон уточняется';
-}
-
-const seed: City[] = [
-  { id: 'kazan', name: 'Казань', country: 'Россия', currency: '₽', slug: 'kazan', lat: 55.7961, lng: 49.1064 },
-  { id: 'novi-sad', name: 'Нови-Сад', country: 'Сербия', currency: 'RSD', slug: 'novi-sad', lat: 45.2671, lng: 19.8335 }
-];
 
 const placeIcon = L.divIcon({ className: 'sc-marker-wrap', html: '<span class="sc-marker sc-place"></span>', iconSize: [18, 18], iconAnchor: [9, 9] });
 const marketIcon = L.divIcon({ className: 'sc-marker-wrap', html: '<span class="sc-marker sc-market"></span>', iconSize: [18, 18], iconAnchor: [9, 9] });
@@ -102,60 +52,6 @@ function Modal({ title, close, children }: { title: string; close: () => void; c
         </header>
         {children}
       </section>
-    </div>
-  );
-}
-
-function SizeTable() {
-  const clothing = [
-    ['XS', '40–42', '34–36', '0–2', 'Б 78–84 · Т 58–64 · Б 84–90'],
-    ['S', '42–44', '36–38', '2–4', 'Б 84–90 · Т 64–70 · Б 90–96'],
-    ['M', '44–46', '38–40', '4–6', 'Б 90–96 · Т 70–76 · Б 96–102'],
-    ['L', '46–48', '40–42', '6–8', 'Б 96–102 · Т 76–82 · Б 102–108'],
-    ['XL', '48–50', '42–44', '8–10', 'Б 102–110 · Т 82–90 · Б 108–116'],
-    ['XXL', '50–52', '44–46', '10–12', 'Б 110–118 · Т 90–98 · Б 116–124']
-  ];
-  const shoes = [
-    ['35', '35', '5', '22.5'],
-    ['36', '36', '6', '23'],
-    ['37', '37', '6.5', '23.5'],
-    ['38', '38', '7.5', '24'],
-    ['39', '39', '8.5', '24.5'],
-    ['40', '40', '9', '25'],
-    ['41', '41', '10', '26'],
-    ['42', '42', '11', '26.5'],
-    ['43', '43', '12', '27.5']
-  ];
-
-  return (
-    <div className="size-content">
-      <h3>ОДЕЖДА · ЖЕНСКАЯ (ОРИЕНТИРОВОЧНО)</h3>
-      <div className="table-scroll">
-        <table className="size-table">
-          <thead>
-            <tr><th>INT</th><th>RU</th><th>EU</th><th>US</th><th>МЕРКИ, СМ</th></tr>
-          </thead>
-          <tbody>
-            {clothing.map(r => (
-              <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="size-note">Б — грудь / Т — талия / Б — бёдра. Сверяйте мерки конкретной вещи: винтаж и бренды могут отличаться.</p>
-      <h3>ОБУВЬ</h3>
-      <div className="table-scroll">
-        <table className="size-table">
-          <thead>
-            <tr><th>RU / EU</th><th>EU</th><th>US</th><th>СТОПА, СМ</th></tr>
-          </thead>
-          <tbody>
-            {shoes.map(r => (
-              <tr key={r[0]}>{r.map((v, i) => <td key={i}>{v}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -334,9 +230,6 @@ export default function App() {
     ['online', 'ОНЛАЙН', 'Сайты, Авито, ТГ-каналы']
   ];
 
-  // Определяем тип открытой карточки: постоянное место (Place) или однодневный маркет (Event)
-  const isSelectedPlace = selected !== null && 'place_type' in selected;
-
   return (
     <div className="min-h-screen">
       <header className="site-header">
@@ -502,103 +395,12 @@ export default function App() {
       )}
 
       {selected && (
-        <Modal title={isSelectedPlace ? (selected as Place).name : (selected as Event).title} close={() => setSelected(null)}>
-          <div className="place-detail space-y-4">
-            {/* 1. ПЛАШКИ КАТЕГОРИЙ / ФОРМАТА СРАЗУ ПОД НАЗВАНИЕМ */}
-            {isSelectedPlace ? (
-              <div className="detail-tags flex flex-wrap gap-2">
-                <span className="stamp bg-[#CCFF00]">ПОСТОЯННО · МАГАЗИН</span>
-                {(selected as Place).categories?.map(c => (
-                  <span className="stamp" key={c}>{categories.find(x => x[0] === c)?.[1] || c}</span>
-                ))}
-                {(selected as Place).is_point_verified && <span className="stamp">ТОЧКА ПРОВЕРЕНА</span>}
-                {(selected as Place).is_assortment_verified && <span className="stamp">АССОРТИМЕНТ ПОДТВЕРЖДЁН</span>}
-              </div>
-            ) : (
-              <div className="detail-tags flex flex-wrap gap-2">
-                <span className="stamp bg-orange-400">СОБЫТИЕ / МАРКЕТ</span>
-              </div>
-            )}
-
-            {/* 2. ПОЛНЫЙ АДРЕС СО ССЫЛКОЙ В GOOGLE MAPS */}
-            <div className="info-block border-t border-black/20 pt-3 space-y-2">
-              <p className="place-address">
-                <b>Адрес:</b>{' '}
-                <a
-                  href={buildGoogleMapsUrl(selected.address, city.name, selected.lat, selected.lng)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline hover:bg-[#CCFF00] transition-colors"
-                  title="Открыть на Google Картах"
-                >
-                  {selected.address
-                    ? (selected.address.toLowerCase().includes(city.name.toLowerCase()) ? selected.address : `${city.name}, ${selected.address}`)
-                    : `${city.name} (посмотреть на карте)`} ↗
-                </a>
-              </p>
-
-              {/* 3. ДЛЯ ПОСТОЯННЫХ МЕСТ: ЦЕНОВОЙ ДИАПАЗОН + ВРЕМЯ РАБОТЫ (БЕЗ ДАТ!) */}
-              {isSelectedPlace ? (
-                <>
-                  <p>
-                    <b>Ценовой диапазон:</b> {formatPriceRange(selected as Place, city.currency)}
-                  </p>
-                  <p className="hours">
-                    <b>Время работы:</b> {(selected as Place).opening_hours || 'Уточняйте в соцсетях магазина'}
-                  </p>
-                </>
-              ) : (
-                /* ДЛЯ ОДНОДНЕВНЫХ МАРКЕТОВ: ДАТЫ ПРОВЕДЕНИЯ */
-                <p className="hours">
-                  <b>Даты проведения:</b>{' '}
-                  {(() => {
-                    const s = formatDateSafe((selected as Event).start_date);
-                    const e = formatDateSafe((selected as Event).end_date);
-                    if (!s) return 'Уточняются у организаторов';
-                    return e && e !== s ? `${s} – ${e}` : s;
-                  })()}
-                </p>
-              )}
-
-              {/* 4. СОЦСЕТИ (И ДЛЯ ПОСТОЯННЫХ МЕСТ, И ДЛЯ МАРКЕТОВ) */}
-              {selected.social_link && (
-                <p>
-                  <b>Соцсети:</b>{' '}
-                  <a href={selected.social_link} target="_blank" rel="noreferrer" className="underline">
-                    Перейти в профиль / канал ↗
-                  </a>
-                </p>
-              )}
-            </div>
-
-            {/* 5. ТЕКСТОВОЕ ОПИСАНИЕ */}
-            <p className="description border-t border-black/20 pt-3">
-              {selected.description || 'Описание пока не добавлено.'}
-            </p>
-
-            {/* 6. ФОТОГРАФИЯ В САМОМ НИЗУ ПОД ВСЕЙ ИНФОРМАЦИЕЙ */}
-            <div className="pt-2">
-              {selected.imageUrl ? (
-                <img
-                  className="place-photo w-full border border-black"
-                  src={selected.imageUrl}
-                  alt={isSelectedPlace ? (selected as Place).name : (selected as Event).title}
-                  onError={e => { e.currentTarget.style.display = 'none'; }}
-                />
-              ) : (
-                <div className="photo-placeholder">ФОТО СКОРО ПОЯВИТСЯ</div>
-              )}
-            </div>
-
-            {/* 7. КНОПКИ АКТУАЛЬНОСТИ ДЛЯ ПОСТОЯННЫХ МЕСТ */}
-            {isSelectedPlace && (
-              <div className="status-actions pt-3 border-t border-black">
-                <button className="lime-button" onClick={() => confirm(false)}>БЫЛ(А) — АКТУАЛЬНО</button>
-                <button className="closed-button" onClick={() => confirm(true)}>ЗАКРЫЛОСЬ</button>
-              </div>
-            )}
-          </div>
-        </Modal>
+        <PlaceModal
+          selected={selected}
+          city={city}
+          onClose={() => setSelected(null)}
+          onConfirm={confirm}
+        />
       )}
 
       {sizes && <Modal title="ТАБЛИЦА РАЗМЕРОВ" close={() => setSizes(false)}><SizeTable /></Modal>}
