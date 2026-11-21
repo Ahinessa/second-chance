@@ -62,6 +62,10 @@ export default function App() {
   const [cat, setCat] = useState(validCategoriesStored());
   const [tab, setTab] = useState(validTabStored());
   const [view, setView] = useState('map');
+  const [onlyFavs, setOnlyFavs] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sc-favorites') || '[]'); } catch { return []; }
+  });
   const [places, setPlaces] = useState<Place[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -146,17 +150,38 @@ export default function App() {
     }
   }
 
+  function toggleFavorite(id: string) {
+    const next = favorites.includes(id) ? favorites.filter(x => x !== id) : [...favorites, id];
+    setFavorites(next);
+    localStorage.setItem('sc-favorites', JSON.stringify(next));
+  }
+
   const list = useMemo(
-    () => places.filter(p => norm(p.city_id) === norm(city.id) && (norm(cat) === 'all' || (p.categories || []).some(c => norm(c) === norm(cat)))),
-    [places, cat, city]
+    () =>
+      places.filter(
+        p =>
+          norm(p.city_id) === norm(city.id) &&
+          (norm(cat) === 'all' || (p.categories || []).some(c => norm(c) === norm(cat))) &&
+          (!onlyFavs || favorites.includes(p.id))
+      ),
+    [places, cat, city, onlyFavs, favorites]
   );
-  const eventList = useMemo(() => events.filter(e => !e.city_id || norm(e.city_id) === norm(city.id)), [events, city]);
+
+  const eventList = useMemo(
+    () =>
+      events.filter(
+        e => (!e.city_id || norm(e.city_id) === norm(city.id)) && (!onlyFavs || favorites.includes(e.id))
+      ),
+    [events, city, onlyFavs, favorites]
+  );
+
   const onlineList = useMemo(() => markets.filter(m => !m.city_id || norm(m.city_id) === norm(city.id)), [markets, city]);
 
   function resetFilters() {
     setCity(cities.find(c => norm(c.name) === 'казань') || seed[0]);
     setCat('all');
     setTab('place');
+    setOnlyFavs(false);
     sessionStorage.removeItem('sc-city-name');
     sessionStorage.removeItem('sc-category');
     sessionStorage.removeItem('sc-tab');
@@ -260,6 +285,15 @@ export default function App() {
           <div className="quick-filters filter-controls w-full">
             <button className="filter-chip" onClick={() => setWelcome(true)}>ГОРОД: {city.name} ✎</button>
             <button className="filter-chip" onClick={() => setWelcome(true)}>КАТЕГОРИЯ: {categories.find(x => x[0] === cat)?.[1]} ✎</button>
+            {tab !== 'online' && (
+              <button
+                className="filter-chip"
+                onClick={() => setOnlyFavs(!onlyFavs)}
+                style={{ backgroundColor: onlyFavs ? '#CCFF00' : undefined }}
+              >
+                {onlyFavs ? '♥ ЛЮБИМЫЕ' : '♡ ЛЮБИМЫЕ'} {favorites.length > 0 ? `(${favorites.length})` : ''}
+              </button>
+            )}
             <button className="filter-chip reset-filters" onClick={resetFilters}>СБРОСИТЬ ФИЛЬТРЫ</button>
             {tab !== 'online' && (
               <div className="view-switch ml-auto">
@@ -279,7 +313,7 @@ export default function App() {
                   {tab === 'place' && list.map(p => p.lat && p.lng && (
                     <Marker key={p.id} position={[p.lat, p.lng]} icon={placeIcon}>
                       <Popup>
-                        <b>{p.name}</b><br />
+                        <b>{p.name.replace(/\(пример карточки\)/gi, '').trim()}</b><br />
                         ПОСТОЯННО · Магазин<br />
                         <button className="popup-action" onClick={() => setSelected(p)}>ОТКРЫТЬ КАРТОЧКУ</button>
                       </Popup>
@@ -295,7 +329,7 @@ export default function App() {
                       </Popup>
                     </Marker>
                   ))}
-                  {tab === 'place' && osm.map(o => {
+                  {tab === 'place' && !onlyFavs && osm.map(o => {
                     const lat = o.lat || o.center?.lat, lon = o.lon || o.center?.lon;
                     return lat && lon ? (
                       <Marker key={o.id} position={[lat, lon]} icon={o.tags?.amenity === 'marketplace' ? marketIcon : placeIcon}>
@@ -314,14 +348,18 @@ export default function App() {
             <div className={view === 'list' ? 'place-list-grid w-full' : 'space-y-4'}>
               {(tab === 'place' ? list : eventList).map(item => {
                 const isMarket = tab === 'market';
-                const cardName = isMarket ? (item as Event).title : (item as Place).name;
-                const rawAddress = isMarket ? (item as Event).address : (item as Place).address;
+                const rawName = isMarket ? (item as Event).title : (item as Place).name;
+                const cardName = rawName.replace(/\(пример карточки\)/gi, '').trim();
+                const rawAddress = (isMarket ? (item as Event).address : (item as Place).address || '').replace(/\(пример адреса\)/gi, '').trim();
                 const cardAddress = rawAddress ? (rawAddress.toLowerCase().includes(city.name.toLowerCase()) ? rawAddress : `${city.name}, ${rawAddress}`) : `${city.name} (адрес уточняется)`;
-                const cardDescription = item.description || 'Описание пока не добавлено.';
+                const cardDescription = (item.description || '')
+                  .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
+                  .trim();
                 const cardPrice = isMarket ? 'Вход / цены уточняйте' : formatPriceRange(item as Place, city.currency);
                 const startStr = isMarket ? formatDateSafe((item as Event).start_date) : '';
                 const endStr = isMarket ? formatDateSafe((item as Event).end_date) : '';
                 const cardDate = startStr ? (endStr && endStr !== startStr ? `${startStr} – ${endStr}` : startStr) : 'Дата уточняется';
+                const isFav = favorites.includes(item.id);
 
                 const routeItem = isMarket
                   ? ({ id: item.id, name: cardName, city_id: city.id, place_type: 'market', categories: [], price_min: 0, price_max: 0, price_note: cardPrice, address: cardAddress, lat: (item as Event).lat ?? null, lng: (item as Event).lng ?? null, description: cardDescription, status: 'approved', is_point_verified: false, is_assortment_verified: false, owner_id: null, live_signal_text: null, live_signal_expires_at: null } as Place)
@@ -329,13 +367,24 @@ export default function App() {
 
                 return (
                   <article className="card place-card" key={item.id}>
-                    <div className={'format-tag ' + (isMarket ? 'market-tag' : '')}>
-                      {isMarket ? 'СОБЫТИЕ / 1 ДЕНЬ' : 'ПОСТОЯННО · МАГАЗИН'}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={'format-tag ' + (isMarket ? 'market-tag' : '')}>
+                        {isMarket ? 'СОБЫТИЕ / 1 ДЕНЬ' : 'ПОСТОЯННО · МАГАЗИН'}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(item.id)}
+                        className="stamp cursor-pointer"
+                        style={{ backgroundColor: isFav ? '#CCFF00' : '#fff' }}
+                        title={isFav ? 'Убрать из любимых' : 'Добавить в любимые'}
+                      >
+                        {isFav ? '♥' : '♡'}
+                      </button>
                     </div>
                     <h2>{cardName}</h2>
                     <p className="place-address">⌖ {cardAddress}</p>
                     {isMarket && <p className="event-date mono">ДАТА: {cardDate}</p>}
-                    <p>{cardDescription}</p>
+                    {cardDescription && <p>{cardDescription}</p>}
                     {!isMarket && (item as Place).live_signal_text && (item as Place).live_signal_expires_at && new Date((item as Place).live_signal_expires_at!) > new Date() && (
                       <div className="signal p-2 mt-2 mono">🔥 {(item as Place).live_signal_text}</div>
                     )}
@@ -350,13 +399,13 @@ export default function App() {
                 );
               })}
 
-              {tab === 'place' && !list.length && <EmptyState onReset={() => { setCat('all'); sessionStorage.setItem('sc-category', 'all'); }} />}
+              {tab === 'place' && !list.length && <EmptyState onReset={() => { setCat('all'); setOnlyFavs(false); sessionStorage.setItem('sc-category', 'all'); }} />}
               {tab === 'market' && !eventList.length && <EmptyState onReset={resetFilters} />}
             </div>
           </div>
         )}
 
-        {tab === 'place' && view === 'map' && osm.length > 0 && (
+        {tab === 'place' && view === 'map' && !onlyFavs && osm.length > 0 && (
           <section className="osm-note">
             <b className="mono">[ OSM — АССОРТИМЕНТ НЕ ПРОВЕРЕН ]</b>
             {osm.slice(0, 15).map(o => <p key={o.id}>{o.tags?.name || o.tags?.shop || 'Место OSM'}</p>)}
@@ -398,6 +447,8 @@ export default function App() {
         <PlaceModal
           selected={selected}
           city={city}
+          isFavorite={favorites.includes(selected.id)}
+          onToggleFavorite={toggleFavorite}
           onClose={() => setSelected(null)}
           onConfirm={confirm}
         />
