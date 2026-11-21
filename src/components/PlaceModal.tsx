@@ -22,6 +22,14 @@ function getSocialLabel(url: string): string {
   }
 }
 
+function stripCityPrefix(rawTitle: string, cityName: string): string {
+  const withoutExample = rawTitle.replace(/\(пример карточки\)/gi, '').trim();
+  const escapedCity = cityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Убираем префикс вида "Москва · ", "Москва - ", "Москва: " из начала заголовка
+  const regex = new RegExp(`^${escapedCity}\\s*[·\\-–—:|]\\s*`, 'i');
+  return withoutExample.replace(regex, '').trim();
+}
+
 function PhotoCollage({
   images,
   singleUrl,
@@ -103,7 +111,7 @@ export function PlaceModal({
 }) {
   const isSelectedPlace = 'place_type' in selected;
   const rawTitle = isSelectedPlace ? (selected as Place).name : (selected as Event).title;
-  const title = rawTitle.replace(/\(пример карточки\)/gi, '').trim();
+  const title = stripCityPrefix(rawTitle, city.name);
 
   const rawAddress = (selected.address || '').replace(/\(пример адреса\)/gi, '').trim();
   const displayAddress = rawAddress
@@ -140,29 +148,30 @@ export function PlaceModal({
     .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
     .trim();
 
+  // Увеличенные, хорошо читаемые плашки категорий
   const badgeStyle: React.CSSProperties = {
-    fontSize: '12px',
+    fontSize: '14px',
     fontWeight: 500,
-    padding: '4px 10px',
+    padding: '6px 14px',
     border: '1px solid #000',
     lineHeight: '1.2',
-    letterSpacing: '0.02em',
+    letterSpacing: '0.01em',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px'
+    gap: '6px'
   };
 
   return (
     <div className="modalback" onClick={onClose}>
       <section className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
-        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '6px' }}>
-          <h2>{title}</h2>
+        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '8px', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '22px', lineHeight: '1.25', fontWeight: 700, margin: 0 }}>{title}</h2>
           <button className="close-button" aria-label="Закрыть" onClick={onClose}>✕</button>
         </header>
 
         <div className="place-detail space-y-4">
-          {/* 1. Метки категорий / формата + кнопка «В любимые» (текст без рамки + крупное сердечко в рамке) */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* 1. Увеличенные плашки категорий + крупная кнопка «В любимые» с красным сердцем без рамки */}
+          <div className="flex flex-wrap items-center gap-2.5">
             {isSelectedPlace ? (
               <>
                 <span style={{ ...badgeStyle, backgroundColor: '#CCFF00' }}>Постоянно · Магазин</span>
@@ -182,38 +191,35 @@ export function PlaceModal({
             <button
               type="button"
               onClick={() => onToggleFavorite(selected.id)}
-              className="ml-auto cursor-pointer group"
+              className="ml-auto cursor-pointer"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
                 background: 'transparent',
                 border: 'none',
-                padding: 0
+                padding: '4px 2px',
+                transition: 'transform 0.12s ease'
               }}
               title={isFavorite ? 'Убрать из любимых' : 'Сохранить в любимые места'}
             >
               <span
                 style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#000'
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#000',
+                  letterSpacing: '0.01em'
                 }}
               >
                 {isFavorite ? 'В любимых' : 'В любимые'}
               </span>
               <span
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  border: '1px solid #000',
-                  backgroundColor: isFavorite ? '#CCFF00' : '#fff',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px',
+                  fontSize: '26px',
                   lineHeight: 1,
-                  transition: 'background-color 0.15s ease'
+                  color: isFavorite ? '#ef4444' : '#000',
+                  transition: 'color 0.15s ease, transform 0.15s ease',
+                  transform: isFavorite ? 'scale(1.1)' : 'scale(1)'
                 }}
               >
                 {isFavorite ? '♥' : '♡'}
