@@ -255,4 +255,8 @@ export function formatPriceRange(p: Place, currency = '₽') {
     if (maxVal <= 500) return `Очень дёшево (до 500 ${cur})`;
     if (maxVal <= 1500) return `Бюджетно (500–1 500 ${cur})`;
     if (maxVal <= 4000) return `Средний сегмент (1 500–4 000 ${cur})`;
-    return
+    return `Винтаж и селектив (от 4 000 ${cur})`;
+  }
+
+  return `Бюджетно (до 1 500 ${cur})`;
+}
