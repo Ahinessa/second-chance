@@ -25,7 +25,6 @@ function getSocialLabel(url: string): string {
 function stripCityPrefix(rawTitle: string, cityName: string): string {
   const withoutExample = rawTitle.replace(/\(пример карточки\)/gi, '').trim();
   const escapedCity = cityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Убираем префикс вида "Москва · ", "Москва - ", "Москва: " из начала заголовка
   const regex = new RegExp(`^${escapedCity}\\s*[·\\-–—:|]\\s*`, 'i');
   return withoutExample.replace(regex, '').trim();
 }
@@ -148,7 +147,6 @@ export function PlaceModal({
     .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
     .trim();
 
-  // Увеличенные, хорошо читаемые плашки категорий
   const badgeStyle: React.CSSProperties = {
     fontSize: '14px',
     fontWeight: 500,
@@ -170,7 +168,7 @@ export function PlaceModal({
         </header>
 
         <div className="place-detail space-y-4">
-          {/* 1. Увеличенные плашки категорий + крупная кнопка «В любимые» с красным сердцем без рамки */}
+          {/* 1. Плашки категорий + кнопка «В ЛЮБИМЫЕ» большими буквами без жирности */}
           <div className="flex flex-wrap items-center gap-2.5">
             {isSelectedPlace ? (
               <>
@@ -205,18 +203,20 @@ export function PlaceModal({
             >
               <span
                 style={{
-                  fontSize: '16px',
-                  fontWeight: 600,
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  textTransform: 'uppercase',
                   color: '#000',
-                  letterSpacing: '0.01em'
+                  letterSpacing: '0.04em'
                 }}
               >
-                {isFavorite ? 'В любимых' : 'В любимые'}
+                {isFavorite ? 'В ЛЮБИМЫХ' : 'В ЛЮБИМЫЕ'}
               </span>
               <span
                 style={{
                   fontSize: '26px',
                   lineHeight: 1,
+                  fontWeight: 400,
                   color: isFavorite ? '#ef4444' : '#000',
                   transition: 'color 0.15s ease, transform 0.15s ease',
                   transform: isFavorite ? 'scale(1.1)' : 'scale(1)'
