@@ -50,7 +50,6 @@ export function PlaceModal({
     .replace(/Тестовая запись для категории [a-z]+\./gi, '')
     .trim();
 
-  // Ровно 3 слота под фотографии (подтягиваем реальные URL, остальные слоты до 3-х заполняем заглушками)
   const rawImages: string[] = Array.isArray((selected as any).images)
     ? (selected as any).images.filter(Boolean).slice(0, 3)
     : [];
@@ -104,12 +103,12 @@ export function PlaceModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Шапка карточки */}
-        <header className="modal-head">
+        <header className="modal-head" style={{ borderBottom: 'none', marginBottom: '12px' }}>
           <div>
-            <div className={'format-tag ' + (isEvent ? 'market-tag' : '')} style={{ marginBottom: '8px' }}>
+            <div className={'format-tag ' + (isEvent ? 'market-tag' : '')} style={{ marginBottom: '10px' }}>
               {isEvent ? 'СОБЫТИЕ / 1 ДЕНЬ' : 'ПОСТОЯННО · МАГАЗИН'}
             </div>
-            <h2>{titleWithoutCity}</h2>
+            <h2 style={{ margin: 0 }}>{titleWithoutCity}</h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -121,7 +120,7 @@ export function PlaceModal({
                 background: 'transparent',
                 border: 'none',
                 padding: 0,
-                fontSize: '25px',
+                fontSize: '32px',
                 lineHeight: 1,
                 color: isFavorite ? '#CCFF00' : '#111',
                 WebkitTextStroke: isFavorite ? '1px #111' : '0px'
@@ -136,49 +135,67 @@ export function PlaceModal({
           </div>
         </header>
 
-        <div className="place-detail">
-          {/* 1. Вся информация сверху */}
-          <p className="place-address">⌖ {fullAddress}</p>
+        {/* Единый шрифт и никаких разделительных линий */}
+        <div className="place-detail" style={{ gap: '10px', fontSize: '15px' }}>
+          <p className="place-address" style={{ margin: 0, fontWeight: 500 }}>
+            ⌖ {fullAddress}
+          </p>
 
-          {isEvent && <p className="event-date mono">ДАТА: {dateLabel}</p>}
-
-          {openingHours && <p className="hours mono text-xs">ЧАСЫ РАБОТЫ: {openingHours}</p>}
-
-          {!isEvent && (
-            <p className="mono text-xs">{formatPriceRange(selected, '₽')}</p>
+          {isEvent && (
+            <p style={{ margin: 0 }}>
+              Дата: {dateLabel}
+            </p>
           )}
 
-          {cleanDesc && <p className="description">{cleanDesc}</p>}
+          {openingHours && (
+            <p style={{ margin: 0, border: 'none', padding: 0 }}>
+              Часы работы: {openingHours}
+            </p>
+          )}
+
+          {!isEvent && (
+            <p style={{ margin: 0 }}>
+              {formatPriceRange(selected, '₽')}
+            </p>
+          )}
+
+          {cleanDesc && (
+            <p className="description" style={{ margin: '4px 0 0 0' }}>
+              {cleanDesc}
+            </p>
+          )}
 
           {/* Бейджи статуса проверки и ссылки */}
-          <div className="detail-tags">
-            {!isEvent && (selected as Place).is_point_verified && (
-              <span className="stamp">✓ ТОЧКА ПРОВЕРЕНА</span>
-            )}
-            {!isEvent && (selected as Place).is_assortment_verified && (
-              <span className="stamp">✓ АССОРТИМЕНТ ПРОВЕРЕН</span>
-            )}
-            {socialLinks.map((url, idx) => {
-              let label = 'САЙТ / СОЦСЕТИ';
-              if (url.includes('t.me')) label = 'TELEGRAM';
-              else if (url.includes('vk.com')) label = 'ВКОНТАКТЕ';
-              else if (url.includes('yandex') || url.includes('google') || url.includes('2gis')) label = 'НА КАРТАХ';
-              return (
-                <a
-                  key={idx}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="stamp hover:bg-[#CCFF00] transition-colors"
-                >
-                  {label} ↗
-                </a>
-              );
-            })}
-          </div>
+          {( (!isEvent && ((selected as Place).is_point_verified || (selected as Place).is_assortment_verified)) || socialLinks.length > 0 ) && (
+            <div className="detail-tags" style={{ marginTop: '4px' }}>
+              {!isEvent && (selected as Place).is_point_verified && (
+                <span className="stamp">✓ ТОЧКА ПРОВЕРЕНА</span>
+              )}
+              {!isEvent && (selected as Place).is_assortment_verified && (
+                <span className="stamp">✓ АССОРТИМЕНТ ПРОВЕРЕН</span>
+              )}
+              {socialLinks.map((url, idx) => {
+                let label = 'САЙТ / СОЦСЕТИ';
+                if (url.includes('t.me')) label = 'TELEGRAM';
+                else if (url.includes('vk.com')) label = 'ВКОНТАКТЕ';
+                else if (url.includes('yandex') || url.includes('google') || url.includes('2gis')) label = 'НА КАРТАХ';
+                return (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="stamp hover:bg-[#CCFF00] transition-colors"
+                  >
+                    {label} ↗
+                  </a>
+                );
+              })}
+            </div>
+          )}
 
-          {/* 2. Коллаж из 3 фотографий под информацией */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Коллаж из 3 фотографий */}
+          <div className="grid grid-cols-3 gap-2" style={{ marginTop: '6px' }}>
             {photoSlots.map((src, idx) =>
               src ? (
                 <img
@@ -200,9 +217,12 @@ export function PlaceModal({
             )}
           </div>
 
-          {/* 3. Кнопки актуальности внизу */}
+          {/* Кнопки актуальности без верхней разделительной линии */}
           {!isEvent && (
-            <div className="status-actions">
+            <div
+              className="status-actions"
+              style={{ borderTop: 'none', paddingTop: '6px', marginTop: '4px' }}
+            >
               {verifiedRecently ? (
                 <div
                   style={{
