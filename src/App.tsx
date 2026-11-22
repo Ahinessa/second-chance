@@ -214,17 +214,26 @@ export default function App() {
     setWelcome(false);
   }
 
-  async function confirm(closed: boolean) {
+async function confirm(closed: boolean) {
     if (!selected) return;
-    if (!UUID_REGEX.test(selected.id)) {
-      setNotice(closed ? 'Спасибо! Отчёт по демо-карточке учтён.' : 'Спасибо! Статус демо-карточки подтверждён.');
+    const targetId = selected.id;
+
+    if (closed) {
+      // Сразу убираем место из текущего списка на экране
+      setPlaces(prev => prev.filter(p => p.id !== targetId));
       setSelected(null);
+      setNotice('Спасибо, что предупредили, место отправлено на проверку');
+      if (UUID_REGEX.test(targetId)) {
+        await supabase.rpc('confirm_place_status', { place_uuid: targetId, is_closed: true });
+      }
       return;
     }
-    const { error } = await supabase.rpc('confirm_place_status', { place_uuid: selected.id, is_closed: closed });
-    setNotice(error?.message || (closed ? 'Спасибо! Отчёт о закрытии отправлен.' : 'Спасибо, статус актуальности обновлён.'));
-    setSelected(null);
-    refresh();
+
+    setNotice('Спасибо, что предупредили! ♥');
+    if (UUID_REGEX.test(targetId)) {
+      await supabase.rpc('confirm_place_status', { place_uuid: targetId, is_closed: false });
+      refresh();
+    }
   }
 
   function routeToggle(p: Place) {
