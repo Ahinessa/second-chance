@@ -50,9 +50,15 @@ export function PlaceModal({
     .replace(/Тестовая запись для категории [a-z]+\./gi, '')
     .trim();
 
-  const images: string[] = Array.isArray((selected as any).images)
+  // Ровно 3 слота под фотографии (подтягиваем реальные URL, остальные слоты до 3-х заполняем заглушками)
+  const rawImages: string[] = Array.isArray((selected as any).images)
     ? (selected as any).images.filter(Boolean).slice(0, 3)
     : [];
+  const photoSlots: (string | null)[] = [
+    rawImages[0] || null,
+    rawImages[1] || null,
+    rawImages[2] || null
+  ];
 
   const socialLinks: string[] = Array.isArray((selected as any).social_links)
     ? (selected as any).social_links.filter(Boolean)
@@ -97,6 +103,7 @@ export function PlaceModal({
         aria-label={titleWithoutCity}
         onClick={e => e.stopPropagation()}
       >
+        {/* Шапка карточки */}
         <header className="modal-head">
           <div>
             <div className={'format-tag ' + (isEvent ? 'market-tag' : '')} style={{ marginBottom: '8px' }}>
@@ -130,28 +137,7 @@ export function PlaceModal({
         </header>
 
         <div className="place-detail">
-          {/* Показываем фото только если они реально загружены */}
-          {images.length > 0 && (
-            <div
-              className={
-                images.length === 1
-                  ? 'grid grid-cols-1'
-                  : images.length === 2
-                  ? 'grid grid-cols-2 gap-2'
-                  : 'grid grid-cols-3 gap-2'
-              }
-            >
-              {images.map((src, idx) => (
-                <img
-                  key={idx}
-                  src={src}
-                  alt={`${titleWithoutCity} — фото ${idx + 1}`}
-                  className="place-photo"
-                />
-              ))}
-            </div>
-          )}
-
+          {/* 1. Вся информация сверху */}
           <p className="place-address">⌖ {fullAddress}</p>
 
           {isEvent && <p className="event-date mono">ДАТА: {dateLabel}</p>}
@@ -191,6 +177,30 @@ export function PlaceModal({
             })}
           </div>
 
+          {/* 2. Коллаж из 3 фотографий под информацией */}
+          <div className="grid grid-cols-3 gap-2">
+            {photoSlots.map((src, idx) =>
+              src ? (
+                <img
+                  key={idx}
+                  src={src}
+                  alt={`${titleWithoutCity} — фото ${idx + 1}`}
+                  className="place-photo"
+                  style={{ aspectRatio: '4 / 3' }}
+                />
+              ) : (
+                <div
+                  key={idx}
+                  className="photo-placeholder"
+                  style={{ aspectRatio: '4 / 3', fontSize: '11px', padding: '8px' }}
+                >
+                  ФОТО {idx + 1}
+                </div>
+              )
+            )}
+          </div>
+
+          {/* 3. Кнопки актуальности внизу */}
           {!isEvent && (
             <div className="status-actions">
               {verifiedRecently ? (
