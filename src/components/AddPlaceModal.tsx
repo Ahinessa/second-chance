@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { City, categories } from '../data/mockData';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ALL_VALID_CATEGORIES = ['clothes', 'home', 'media', 'antiques', 'flea'];
 
 export function AddPlaceModal({
   user,
@@ -65,6 +66,12 @@ export function AddPlaceModal({
     }
 
     const rawLink = String(f.get('verify_link') || '').trim();
+    const selectedCat = String(f.get('category') || 'all');
+
+    // Если выбрано «Всё подряд» ('all'), отправляем массив всех разрешённых базой категорий
+    const mappedCategories =
+      selectedCat === 'all' ? ALL_VALID_CATEGORIES : [selectedCat];
+
     const userRole = user.user_metadata?.role;
     const isAutoApproved =
       user.email?.toLowerCase() === 'ahinessa@yandex.ru' ||
@@ -76,19 +83,17 @@ export function AddPlaceModal({
       name: String(f.get('name') || '').trim(),
       address: String(f.get('address') || '').trim(),
       social_links: rawLink ? [rawLink] : [],
-      categories: [String(f.get('category') || 'all')],
+      categories: mappedCategories,
       place_type: 'shop',
       lat: city.lat,
       lng: city.lng
     };
 
-    // Пробуем сохранить с нужным статусом
     let { error } = await supabase.from('places').insert({
       ...basePayload,
       status: isAutoApproved ? 'approved' : 'pending'
     });
 
-    // Если RLS запретил прямую публикацию 'approved', автоматически отправляем как 'pending' на проверку
     if (error && isAutoApproved) {
       const fallback = await supabase.from('places').insert({
         ...basePayload,
@@ -100,12 +105,7 @@ export function AddPlaceModal({
     setSubmitting(false);
 
     if (error) {
-      // Переводим любую системную ошибку RLS на человеческий язык
-      if (error.message.toLowerCase().includes('row-level security')) {
-        onNotify('Недостаточно прав для добавления. Проверьте вход в аккаунт.');
-      } else {
-        onNotify('Не удалось отправить заявку. Попробуйте чуть позже.');
-      }
+      onNotify('Не удалось отправить заявку. Проверьте заполненные поля.');
       return;
     }
 
