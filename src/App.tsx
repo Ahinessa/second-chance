@@ -211,19 +211,30 @@ export default function App() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     if (!user) return;
+
+    const rawLink = String(f.get('verify_link') || '').trim();
+    const userRole = user.user_metadata?.role;
+    const isAutoApproved =
+      user.email?.toLowerCase() === 'ahinessa@yandex.ru' ||
+      ['trusted', 'owner', 'organizer'].includes(userRole);
+
     const { error } = await supabase.from('places').insert({
       city_id: city.id,
       owner_id: user.id,
       name: f.get('name'),
       address: f.get('address'),
-      description: f.get('description'),
+      social_links: rawLink ? [rawLink] : [],
       categories: [f.get('category')],
       place_type: 'shop',
-      status: 'pending',
+      status: isAutoApproved ? 'approved' : 'pending',
       lat: city.lat,
       lng: city.lng
     });
-    setNotice(error?.message || 'Отправлено на модерацию');
+
+    setNotice(
+      error?.message ||
+        (isAutoApproved ? 'Место добавлено на карту!' : 'Отправлено на модерацию')
+    );
     setAdd(false);
     refresh();
   }
@@ -458,6 +469,10 @@ export default function App() {
           favoritesCount={favorites.length}
           onClose={() => setAuth(false)}
           onOpenAddPlace={() => setAdd(true)}
+          onShowFavorites={() => {
+            setOnlyFavs(true);
+            if (tab === 'online') setTab('place');
+          }}
           onNotify={setNotice}
         />
       )}
@@ -465,10 +480,19 @@ export default function App() {
       {add && (
         <Modal title="ДОБАВИТЬ МЕСТО" close={() => setAdd(false)}>
           <form onSubmit={addPlace} className="auth-form">
-            <input name="name" required placeholder="Название" />
-            <input name="address" placeholder="Адрес" />
-            <textarea name="description" placeholder="Описание" />
-            <select name="category">{categories.slice(1).map(([id, n]) => <option value={id} key={id}>{n}</option>)}</select>
+            <input name="name" required placeholder="Название места" />
+            <input name="address" required placeholder="Адрес (улица, дом)" />
+            <input
+              name="verify_link"
+              type="url"
+              required
+              placeholder="Ссылка для проверки информации (сайт, Telegram, ВК, карты)"
+            />
+            <select name="category">
+              {categories.map(([id, n]) => (
+                <option value={id} key={id}>{n}</option>
+              ))}
+            </select>
             <button className="lime-button">ОТПРАВИТЬ НА МОДЕРАЦИЮ</button>
           </form>
         </Modal>
