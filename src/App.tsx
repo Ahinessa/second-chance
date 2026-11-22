@@ -49,8 +49,8 @@ function Modal({ title, close, children }: { title: string; close: () => void; c
   return (
     <div className="modalback" onClick={close}>
       <section className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
-        <header className="modal-head">
-          <h2>{title}</h2>
+        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 600, margin: 0 }}>{title}</h2>
           <button className="close-button" aria-label="Закрыть" onClick={close}>✕</button>
         </header>
         {children}
@@ -97,7 +97,6 @@ export default function App() {
   useEffect(() => {
     supabase.from('cities').select('*').then(({ data }) => {
       if (data?.length) {
-        // Приоритет отдаём городам из БД (у них настоящий UUID), дополняем недостающими из seed
         const merged: City[] = [...data];
         seed.forEach(s => {
           if (!merged.some(m => norm(m.name) === norm(s.name))) merged.push(s);
@@ -224,7 +223,6 @@ export default function App() {
     localStorage.setItem('sc-route', JSON.stringify(n));
   }
 
-  // Находим или создаём настоящий UUID города в таблице cities перед записью в places
   async function resolveCityUuid(targetCity: City): Promise<string | null> {
     if (UUID_REGEX.test(targetCity.id)) return targetCity.id;
 
@@ -368,9 +366,9 @@ export default function App() {
         </nav>
 
         {(tab === 'place' || tab === 'market') && (
-          <div className={view === 'map' ? 'grid lg:grid-cols-2 gap-5 w-full' : 'w-full col-span-full'}>
+          <div className={view === 'map' ? 'grid lg:grid-cols-2 gap-5 w-full items-start' : 'w-full col-span-full'}>
             {view === 'map' && (
-              <div className={tab === 'market' ? 'map market-map' : 'map'}>
+              <div className={(tab === 'market' ? 'map market-map' : 'map') + ' sticky-map-col'}>
                 <MapContainer key={city.id} center={[city.lat, city.lng]} zoom={13}>
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
                   {tab === 'place' && list.map(p => p.lat && p.lng && (
@@ -495,10 +493,10 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t-2 border-black p-4 mono text-xs">SECOND CHANCE · BETA</footer>
+      <footer className="border-t border-black p-4 mono text-xs">SECOND CHANCE · BETA</footer>
 
       {route.length > 0 && (
-        <aside className="fixed bottom-3 right-3 z-[900] receipt p-3 w-72">
+        <aside className="fixed bottom-3 right-3 z-[1000] receipt p-3 w-72">
           <b>ЧЕК ПРОГУЛКИ · {route.length} ТОЧЕК</b>
           {route.map(p => <p key={p.id}>{p.name} <button onClick={() => routeToggle(p)}>−</button></p>)}
           <p>Оценка: {route.reduce((a, p) => a + (p.price_min || 0), 0)}–{route.reduce((a, p) => a + (p.price_max || 0), 0)} ₽</p>
@@ -554,7 +552,11 @@ export default function App() {
         </Modal>
       )}
 
-      {user && <button className="fixed bottom-3 left-3 lime-button z-50" onClick={() => setAdd(true)}>+ ДОБАВИТЬ</button>}
+      {user && (
+        <button className="lime-button floating-add-btn" onClick={() => setAdd(true)}>
+          + ДОБАВИТЬ
+        </button>
+      )}
       {notice && <button className="toast" onClick={() => setNotice('')}>{notice} ×</button>}
 
       {welcome && (
