@@ -21,6 +21,8 @@ import { SizeTable } from './components/SizeTable';
 import { PlaceModal } from './components/PlaceModal';
 import { AuthModal } from './components/AuthModal';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function validCategoriesStored() {
   const v = sessionStorage.getItem('sc-category');
   return categories.some(x => x[0] === v) ? v : 'all';
@@ -95,13 +97,14 @@ export default function App() {
   useEffect(() => {
     supabase.from('cities').select('*').then(({ data }) => {
       if (data?.length) {
-        const merged = [...seed];
-        data.forEach(d => {
-          if (!merged.some(m => norm(m.name) === norm(d.name))) merged.push(d);
+        // Приоритет отдаём городам из БД (у них настоящий UUID), дополняем недостающими из seed
+        const merged: City[] = [...data];
+        seed.forEach(s => {
+          if (!merged.some(m => norm(m.name) === norm(s.name))) merged.push(s);
         });
         setCities(merged);
         const remembered = sessionStorage.getItem('sc-city-name');
-        setCity(merged.find(c => norm(c.name) === norm(remembered) || c.slug === remembered) || merged[0]);
+        setCity(merged.find(c => norm(c.name) === norm(remembered) || c.slug === remembered) || merged.find(c => norm(c.name) === 'казань') || merged[0]);
       }
     });
   }, []);
@@ -109,11 +112,20 @@ export default function App() {
   useEffect(() => { refresh(); }, [city]);
 
   async function refresh() {
+    const isUuid = UUID_REGEX.test(city.id);
+
     const [p, e, m] = await Promise.all([
-      supabase.from('places').select('*').eq('city_id', city.id).eq('status', 'approved'),
-      supabase.from('events').select('*').eq('city_id', city.id).eq('status', 'approved').gte('end_date', new Date().toISOString()),
-      supabase.from('online_markets').select('*').or(`city_id.eq.${city.id},city_id.is.null`)
+      isUuid
+        ? supabase.from('places').select('*').eq('city_id', city.id).eq('status', 'approved')
+        : Promise.resolve({ data: [] as Place[] }),
+      isUuid
+        ? supabase.from('events').select('*').eq('city_id', city.id).eq('status', 'approved').gte('end_date', new Date().toISOString())
+        : Promise.resolve({ data: [] as Event[] }),
+      isUuid
+        ? supabase.from('online_markets').select('*').or(`city_id.eq.${city.id},city_id.is.null`)
+        : supabase.from('online_markets').select('*').is('city_id', null)
     ]);
+
     setPlaces([...(p.data || []), ...mockPlaces(city)]);
     setEvents([...(e.data || []), ...mockEvents(city)]);
     setMarkets([...(m.data || []), ...mockOnline(city)]);
@@ -195,6 +207,11 @@ export default function App() {
 
   async function confirm(closed: boolean) {
     if (!selected) return;
+    if (!UUID_REGEX.test(selected.id)) {
+      setNotice(closed ? 'Спасибо! Отчёт по демо-карточке учтён.' : 'Спасибо! Статус демо-карточки подтверждён.');
+      setSelected(null);
+      return;
+    }
     const { error } = await supabase.rpc('confirm_place_status', { place_uuid: selected.id, is_closed: closed });
     setNotice(error?.message || (closed ? 'Спасибо! Отчёт о закрытии отправлен.' : 'Спасибо, статус актуальности обновлён.'));
     setSelected(null);
@@ -207,10 +224,45 @@ export default function App() {
     localStorage.setItem('sc-route', JSON.stringify(n));
   }
 
+  // Находим или создаём настоящий UUID города в таблице cities перед записью в places
+  async function resolveCityUuid(targetCity: City): Promise<string | null> {
+    if (UUID_REGEX.test(targetCity.id)) return targetCity.id;
+
+    const { data: existing } = await supabase
+      .from('cities')
+      .select('id')
+      .ilike('name', targetCity.name)
+      .maybeSingle();
+
+    if (existing?.id) return existing.id;
+
+    const slug = targetCity.slug || `city-${Date.now()}`;
+    const { data: created } = await supabase
+      .from('cities')
+      .insert({
+        name: targetCity.name,
+        country: targetCity.country || 'Россия',
+        currency: '₽',
+        slug,
+        lat: targetCity.lat,
+        lng: targetCity.lng
+      })
+      .select('id')
+      .single();
+
+    return created?.id || null;
+  }
+
   async function addPlace(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     if (!user) return;
+
+    const realCityId = await resolveCityUuid(city);
+    if (!realCityId) {
+      setNotice('Не удалось определить ID города в базе. Проверьте таблицу cities в Supabase.');
+      return;
+    }
 
     const rawLink = String(f.get('verify_link') || '').trim();
     const userRole = user.user_metadata?.role;
@@ -219,7 +271,7 @@ export default function App() {
       ['trusted', 'owner', 'organizer'].includes(userRole);
 
     const { error } = await supabase.from('places').insert({
-      city_id: city.id,
+      city_id: realCityId,
       owner_id: user.id,
       name: f.get('name'),
       address: f.get('address'),
@@ -230,6 +282,10 @@ export default function App() {
       lat: city.lat,
       lng: city.lng
     });
+
+    if (!error && !UUID_REGEX.test(city.id)) {
+      setCity({ ...city, id: realCityId });
+    }
 
     setNotice(
       error?.message ||
