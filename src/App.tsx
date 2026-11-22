@@ -23,6 +23,16 @@ import { AuthModal } from './components/AuthModal';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function cleanCardTitle(rawTitle: string, cityName: string): string {
+  const withoutExample = rawTitle
+    .replace(/\(пример карточки\)/gi, '')
+    .replace(/\(пример\)/gi, '')
+    .trim();
+  const escapedCity = cityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`^${escapedCity}\\s*[·\\-–—:|]\\s*`, 'i');
+  return withoutExample.replace(regex, '').trim();
+}
+
 function validCategoriesStored() {
   const v = sessionStorage.getItem('sc-category');
   return categories.some(x => x[0] === v) ? v : 'all';
@@ -374,7 +384,7 @@ export default function App() {
                   {tab === 'place' && list.map(p => p.lat && p.lng && (
                     <Marker key={p.id} position={[p.lat, p.lng]} icon={placeIcon}>
                       <Popup>
-                        <b>{p.name.replace(/\(пример карточки\)/gi, '').trim()}</b><br />
+                        <b>{cleanCardTitle(p.name, city.name)}</b><br />
                         ПОСТОЯННО · Магазин<br />
                         <button className="popup-action" onClick={() => setSelected(p)}>ОТКРЫТЬ КАРТОЧКУ</button>
                       </Popup>
@@ -383,7 +393,7 @@ export default function App() {
                   {tab === 'market' && eventList.map(e => e.lat && e.lng && (
                     <Marker key={e.id} position={[e.lat, e.lng]} icon={marketIcon}>
                       <Popup>
-                        <b>{e.title}</b><br />
+                        <b>{cleanCardTitle(e.title, city.name)}</b><br />
                         СОБЫТИЕ / 1 ДЕНЬ<br />
                         {formatDateSafe(e.start_date)}<br />
                         <button className="popup-action" onClick={() => setSelected(e)}>ОТКРЫТЬ КАРТОЧКУ</button>
@@ -410,11 +420,16 @@ export default function App() {
               {(tab === 'place' ? list : eventList).map(item => {
                 const isMarket = tab === 'market';
                 const rawName = isMarket ? (item as Event).title : (item as Place).name;
-                const cardName = rawName.replace(/\(пример карточки\)/gi, '').trim();
-                const rawAddress = (isMarket ? (item as Event).address : (item as Place).address || '').replace(/\(пример адреса\)/gi, '').trim();
+                const cardName = cleanCardTitle(rawName, city.name);
+                const rawAddress = (isMarket ? (item as Event).address : (item as Place).address || '')
+                  .replace(/\(пример адреса\)/gi, '')
+                  .replace(/\(пример зоны\)/gi, '')
+                  .trim();
                 const cardAddress = rawAddress ? (rawAddress.toLowerCase().includes(city.name.toLowerCase()) ? rawAddress : `${city.name}, ${rawAddress}`) : `${city.name} (адрес уточняется)`;
                 const cardDescription = (item.description || '')
                   .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
+                  .replace(/Демонстрационная запись; сведения требуют проверки\./gi, '')
+                  .replace(/Тестовая запись для категории [a-z]+\./gi, '')
                   .trim();
                 const cardPrice = isMarket ? 'Вход / цены уточняйте' : formatPriceRange(item as Place, '₽');
                 const startStr = isMarket ? formatDateSafe((item as Event).start_date) : '';
@@ -435,8 +450,18 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => toggleFavorite(item.id)}
-                        className="stamp cursor-pointer"
-                        style={{ backgroundColor: isFav ? '#CCFF00' : '#fff' }}
+                        className="cursor-pointer"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: 0,
+                          fontSize: '25px',
+                          lineHeight: 1,
+                          color: isFav ? '#CCFF00' : '#111',
+                          WebkitTextStroke: isFav ? '1px #111' : '0px',
+                          transition: 'transform 0.12s ease, color 0.15s ease',
+                          transform: isFav ? 'scale(1.08)' : 'scale(1)'
+                        }}
                         title={isFav ? 'Убрать из любимых' : 'Добавить в любимые'}
                       >
                         {isFav ? '♥' : '♡'}
@@ -498,7 +523,7 @@ export default function App() {
       {route.length > 0 && (
         <aside className="fixed bottom-3 right-3 z-[1000] receipt p-3 w-72">
           <b>ЧЕК ПРОГУЛКИ · {route.length} ТОЧЕК</b>
-          {route.map(p => <p key={p.id}>{p.name} <button onClick={() => routeToggle(p)}>−</button></p>)}
+          {route.map(p => <p key={p.id}>{cleanCardTitle(p.name, city.name)} <button onClick={() => routeToggle(p)}>−</button></p>)}
           <p>Оценка: {route.reduce((a, p) => a + (p.price_min || 0), 0)}–{route.reduce((a, p) => a + (p.price_max || 0), 0)} ₽</p>
           <button onClick={() => { setRoute([]); localStorage.removeItem('sc-route'); }}>ОЧИСТИТЬ</button>
         </aside>
