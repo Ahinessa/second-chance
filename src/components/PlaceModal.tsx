@@ -34,11 +34,76 @@ export function PlaceModal({
     .replace(/\(пример\)/gi, '')
     .trim();
 
-  const escapedCity = city.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedCity = city.name.replace(/[.*+?^${}()[\]\\]/g, '\\$&');
   const titleWithoutCity = cleanTitle
-    .replace(new RegExp(`^${escapedCity}\\s*[·\\-–—:\vert{}]\\s*`, 'i'), '') .trim();  const rawAddress = (selected.address \vert{}\vert{} '') .replace(/\(пример адреса\)/gi, '') .replace(/\(пример зоны\)/gi, '') .trim(); const fullAddress = rawAddress ? rawAddress.toLowerCase().includes(city.name.toLowerCase()) ? rawAddress : `${city.name}, ${rawAddress}` : `${city.name} (адрес уточняется)`;
+    .replace(new RegExp(`^${escapedCity}\\s*[·\\-–—:]\\s*`, 'i'), '')
+    .trim();
 
-  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;  const cleanDesc = (selected.description \vert{}\vert{} '') .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '') .replace(/Демонстрационная запись; сведения требуют проверки\./gi, '') .replace(/Тестовая запись для категории [a-z]+\./gi, '') .trim();  // Названия категорий для плашек рядом с тегом «Постоянно · Магазин» const placeCategoryLabels: string[] = !isEvent && Array.isArray((selected as Place).categories) ? (selected as Place).categories .filter(c => c && c !== 'all') .map(c => categories.find(x => x[0] === c)?.[1] \vert{}\vert{} c) : [];  // Ровно 3 слота под фотографии для асимметричного коллажа (1 большое слева + 2 справа) const rawImages: string[] = Array.isArray((selected as any).images) ? (selected as any).images.filter(Boolean).slice(0, 3) : []; const photo1 = rawImages[0] \vert{}\vert{} null; const photo2 = rawImages[1] \vert{}\vert{} null; const photo3 = rawImages[2] \vert{}\vert{} null;  const socialLinks: string[] = Array.isArray((selected as any).social_links) ? (selected as any).social_links.filter(Boolean) : [];  const openingHours: string = (selected as any).opening_hours \vert{}\vert{} ''; const confirmationsCount: number = (selected as any).confirmations_count \vert{}\vert{} 0;  const dbVerifiedTs = (selected as any).last_verified_at ? new Date((selected as any).last_verified_at).getTime() : null; const localVerifiedTs = getLocalVerifiedAt(selected.id); const latestVerifiedTs = Math.max(dbVerifiedTs \vert{}\vert{} 0, localVerifiedTs \vert{}\vert{} 0) \vert{}\vert{} null;  const [verifiedRecently, setVerifiedRecently] = useState<boolean>(() => { if (!latestVerifiedTs) return false; return Date.now() - latestVerifiedTs < FIFTEEN_DAYS_MS; });  const startStr = isEvent ? formatDateSafe(selected.start_date) : ''; const endStr = isEvent ? formatDateSafe(selected.end_date) : ''; const dateLabel = startStr ? endStr && endStr !== startStr ? `${startStr} – ${endStr}` : startStr : 'Дата уточняется';  function handleMarkActual() { try { localStorage.setItem(`sc-verified-${selected.id}`, String(Date.now()));
+  const rawAddress = (selected.address ? selected.address : '')
+    .replace(/\(пример адреса\)/gi, '')
+    .replace(/\(пример зоны\)/gi, '')
+    .trim();
+
+  const fullAddress = rawAddress
+    ? rawAddress.toLowerCase().includes(city.name.toLowerCase())
+      ? rawAddress
+      : `${city.name}, ${rawAddress}`
+    : `${city.name} (адрес уточняется)`;
+
+  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+
+  const cleanDesc = (selected.description ? selected.description : '')
+    .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
+    .replace(/Демонстрационная запись; сведения требуют проверки\./gi, '')
+    .replace(/Тестовая запись для категории [a-z]+\./gi, '')
+    .trim();
+
+  const placeCategoryLabels: string[] =
+    !isEvent && Array.isArray((selected as Place).categories)
+      ? (selected as Place).categories
+          .filter(c => Boolean(c) && c !== 'all')
+          .map(c => {
+            const found = categories.find(x => x[0] === c);
+            return found ? found[1] : c;
+          })
+      : [];
+
+  const rawImages: string[] = Array.isArray((selected as any).images)
+    ? (selected as any).images.filter(Boolean).slice(0, 3)
+    : [];
+  const photo1 = rawImages[0] ? rawImages[0] : null;
+  const photo2 = rawImages[1] ? rawImages[1] : null;
+  const photo3 = rawImages[2] ? rawImages[2] : null;
+
+  const socialLinks: string[] = Array.isArray((selected as any).social_links)
+    ? (selected as any).social_links.filter(Boolean)
+    : [];
+
+  const openingHours: string = (selected as any).opening_hours ? (selected as any).opening_hours : '';
+  const confirmationsCount: number = (selected as any).confirmations_count ? (selected as any).confirmations_count : 0;
+
+  const dbVerifiedTs = (selected as any).last_verified_at
+    ? new Date((selected as any).last_verified_at).getTime()
+    : 0;
+  const localVerifiedTs = getLocalVerifiedAt(selected.id) ?? 0;
+  const latestVerifiedTs = Math.max(dbVerifiedTs, localVerifiedTs);
+
+  const [verifiedRecently, setVerifiedRecently] = useState<boolean>(() => {
+    if (!latestVerifiedTs) return false;
+    return Date.now() - latestVerifiedTs < FIFTEEN_DAYS_MS;
+  });
+
+  const startStr = isEvent ? formatDateSafe(selected.start_date) : '';
+  const endStr = isEvent ? formatDateSafe(selected.end_date) : '';
+  const dateLabel = startStr
+    ? endStr && endStr !== startStr
+      ? `${startStr} – ${endStr}`
+      : startStr
+    : 'Дата уточняется';
+
+  function handleMarkActual() {
+    try {
+      localStorage.setItem(`sc-verified-${selected.id}`, String(Date.now()));
     } catch {}
     setVerifiedRecently(true);
     onConfirm(false);
@@ -54,7 +119,6 @@ export function PlaceModal({
         onClick={e => e.stopPropagation()}
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
       >
-        {/* 1. Заголовок и кнопка закрытия */}
         <header
           style={{
             display: 'flex',
@@ -72,7 +136,6 @@ export function PlaceModal({
           </button>
         </header>
 
-        {/* 2. Строка тегов слева + «В любимые» с крупным сердечком справа */}
         <div
           style={{
             display: 'flex',
@@ -143,7 +206,6 @@ export function PlaceModal({
           </button>
         </div>
 
-        {/* 3. Единый информационный блок (без линий и смены шрифтов) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '15px', lineHeight: 1.45 }}>
           <div>
             <span style={{ fontWeight: 600 }}>Адрес: </span>
@@ -188,7 +250,9 @@ export function PlaceModal({
                 let label = 'Сайт / соцсети';
                 if (url.includes('t.me')) label = 'Telegram';
                 else if (url.includes('vk.com')) label = 'ВКонтакте';
-                else if (url.includes('yandex') || url.includes('google') || url.includes('2gis')) label = 'На картах';
+                else if (url.includes('yandex')) label = 'На картах';
+                else if (url.includes('google')) label = 'На картах';
+                else if (url.includes('2gis')) label = 'На картах';
                 return (
                   <a
                     key={idx}
@@ -214,14 +278,12 @@ export function PlaceModal({
           )}
         </div>
 
-        {/* 4. Описание места */}
         {cleanDesc && (
           <p style={{ margin: '16px 0 0 0', fontSize: '15px', lineHeight: 1.6 }}>
             {cleanDesc}
           </p>
         )}
 
-        {/* 5. Асимметричный коллаж из 3 фотографий (ФОТО 1 большое слева + ФОТО 2 и ФОТО 3 друг под другом справа) */}
         <div
           style={{
             display: 'grid',
@@ -231,12 +293,25 @@ export function PlaceModal({
             marginTop: '18px'
           }}
         >
-          {/* ФОТО 1 (на всю высоту левой колонки) */}
           <div style={{ gridRow: 'span 2', height: '100%' }}>
             {photo1 ? (
               <img
                 src={photo1}
-                alt={`${titleWithoutCity} — фото 1`} style={{ width: '100\%', height: '100\%', objectFit: 'cover', border: '1px solid #111' }} /> ) : ( <div className="photo-placeholder" style={{ width: '100\%', height: '100\%', aspectRatio: 'auto' }}> ФОТО 1 </div> )} </div>  {/* ФОТО 2 (верхнее правое) */} <div style={{ height: '100\%' }}> {photo2 ? ( <img src={photo2} alt={`${titleWithoutCity} — фото 2`}
+                alt={`${titleWithoutCity} — фото 1`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1px solid #111' }}
+              />
+            ) : (
+              <div className="photo-placeholder" style={{ width: '100%', height: '100%', aspectRatio: 'auto' }}>
+                ФОТО 1
+              </div>
+            )}
+          </div>
+
+          <div style={{ height: '100%' }}>
+            {photo2 ? (
+              <img
+                src={photo2}
+                alt={`${titleWithoutCity} — фото 2`}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1px solid #111' }}
               />
             ) : (
@@ -246,12 +321,36 @@ export function PlaceModal({
             )}
           </div>
 
-          {/* ФОТО 3 (нижнее правое) */}
           <div style={{ height: '100%' }}>
             {photo3 ? (
               <img
                 src={photo3}
-                alt={`${titleWithoutCity} — фото 3`} style={{ width: '100\%', height: '100\%', objectFit: 'cover', border: '1px solid #111' }} /> ) : ( <div className="photo-placeholder" style={{ width: '100\%', height: '100\%', aspectRatio: 'auto' }}> ФОТО 3 </div> )} </div> </div>  {/* 6. Кнопки актуальности внизу (без разделительных линий) */} {!isEvent && ( <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }}> {verifiedRecently ? ( <div style={{ width: '100\%', padding: '10px 14px', border: '1px solid #111', backgroundColor: '#CCFF00', fontSize: '13px', fontWeight: 500 }} > ✓ Данные актуальны — место проверено недавно {confirmationsCount > 0 ? ` (подтверждений: ${confirmationsCount})` : ''}
+                alt={`${titleWithoutCity} — фото 3`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1px solid #111' }}
+              />
+            ) : (
+              <div className="photo-placeholder" style={{ width: '100%', height: '100%', aspectRatio: 'auto' }}>
+                ФОТО 3
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!isEvent && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }}>
+            {verifiedRecently ? (
+              <div
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '1px solid #111',
+                  backgroundColor: '#CCFF00',
+                  fontSize: '13px',
+                  fontWeight: 500
+                }}
+              >
+                ✓ Данные актуальны — место проверено недавно
+                {confirmationsCount > 0 ? ` (подтверждений: ${confirmationsCount})` : ''}
               </div>
             ) : (
               <>
