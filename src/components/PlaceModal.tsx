@@ -46,6 +46,8 @@ export function PlaceModal({
 
   const cleanDesc = (selected.description || '')
     .replace(/Тестовая карточка для наполнения каталога\.\s*Проверить точный адрес, ассортимент и график перед публикацией\./gi, '')
+    .replace(/Демонстрационная запись; сведения требуют проверки\./gi, '')
+    .replace(/Тестовая запись для категории [a-z]+\./gi, '')
     .trim();
 
   const images: string[] = Array.isArray((selected as any).images)
@@ -59,7 +61,6 @@ export function PlaceModal({
   const openingHours: string = (selected as any).opening_hours || '';
   const confirmationsCount: number = (selected as any).confirmations_count || 0;
 
-  // Проверяем, было ли место подтверждено менее 15 дней назад (из БД или локально)
   const dbVerifiedTs = (selected as any).last_verified_at
     ? new Date((selected as any).last_verified_at).getTime()
     : null;
@@ -87,10 +88,6 @@ export function PlaceModal({
     onConfirm(false);
   }
 
-  function handleMarkClosed() {
-    onConfirm(true);
-  }
-
   return (
     <div className="modalback" onClick={onClose}>
       <section
@@ -100,12 +97,12 @@ export function PlaceModal({
         aria-label={titleWithoutCity}
         onClick={e => e.stopPropagation()}
       >
-        <header className="modal-head" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+        <header className="modal-head">
           <div>
             <div className={'format-tag ' + (isEvent ? 'market-tag' : '')} style={{ marginBottom: '8px' }}>
               {isEvent ? 'СОБЫТИЕ / 1 ДЕНЬ' : 'ПОСТОЯННО · МАГАЗИН'}
             </div>
-            <h2 style={{ margin: 0 }}>{titleWithoutCity}</h2>
+            <h2>{titleWithoutCity}</h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -117,11 +114,10 @@ export function PlaceModal({
                 background: 'transparent',
                 border: 'none',
                 padding: 0,
-                fontSize: '26px',
+                fontSize: '25px',
                 lineHeight: 1,
                 color: isFavorite ? '#CCFF00' : '#111',
-                WebkitTextStroke: isFavorite ? '1px #111' : '0px',
-                transition: 'transform 0.12s ease'
+                WebkitTextStroke: isFavorite ? '1px #111' : '0px'
               }}
               title={isFavorite ? 'Убрать из любимых' : 'Добавить в любимые'}
             >
@@ -134,8 +130,8 @@ export function PlaceModal({
         </header>
 
         <div className="place-detail">
-          {/* Фотографии (до 3 штук) или аккуратная заглушка */}
-          {images.length > 0 ? (
+          {/* Показываем фото только если они реально загружены */}
+          {images.length > 0 && (
             <div
               className={
                 images.length === 1
@@ -154,60 +150,47 @@ export function PlaceModal({
                 />
               ))}
             </div>
-          ) : (
-            <div className="photo-placeholder">
-              ФОТОГРАФИИ МЕСТА ПОЯВЯТСЯ ПОСЛЕ ПРОВЕРКИ
-            </div>
           )}
 
-          {/* Адрес, дата, часы работы и цены */}
-          <div className="space-y-1 text-sm">
-            <p className="place-address" style={{ margin: 0 }}>
-              ⌖ {fullAddress}
-            </p>
-            {isEvent && (
-              <p className="event-date mono" style={{ marginTop: '6px' }}>
-                ДАТА: {dateLabel}
-              </p>
+          <p className="place-address">⌖ {fullAddress}</p>
+
+          {isEvent && <p className="event-date mono">ДАТА: {dateLabel}</p>}
+
+          {openingHours && <p className="hours mono text-xs">ЧАСЫ РАБОТЫ: {openingHours}</p>}
+
+          {!isEvent && (
+            <p className="mono text-xs">{formatPriceRange(selected, '₽')}</p>
+          )}
+
+          {cleanDesc && <p className="description">{cleanDesc}</p>}
+
+          {/* Бейджи статуса проверки и ссылки */}
+          <div className="detail-tags">
+            {!isEvent && (selected as Place).is_point_verified && (
+              <span className="stamp">✓ ТОЧКА ПРОВЕРЕНА</span>
             )}
-            {openingHours && (
-              <p className="hours mono text-xs" style={{ marginTop: '6px' }}>
-                ЧАСЫ РАБОТЫ: {openingHours}
-              </p>
+            {!isEvent && (selected as Place).is_assortment_verified && (
+              <span className="stamp">✓ АССОРТИМЕНТ ПРОВЕРЕН</span>
             )}
-            {!isEvent && (
-              <p className="mono text-xs" style={{ marginTop: '6px' }}>
-                ЦЕНЫ: {formatPriceRange(selected, '₽')}
-              </p>
-            )}
+            {socialLinks.map((url, idx) => {
+              let label = 'САЙТ / СОЦСЕТИ';
+              if (url.includes('t.me')) label = 'TELEGRAM';
+              else if (url.includes('vk.com')) label = 'ВКОНТАКТЕ';
+              else if (url.includes('yandex') || url.includes('google') || url.includes('2gis')) label = 'НА КАРТАХ';
+              return (
+                <a
+                  key={idx}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="stamp hover:bg-[#CCFF00] transition-colors"
+                >
+                  {label} ↗
+                </a>
+              );
+            })}
           </div>
 
-          {cleanDesc && <p className="description" style={{ margin: 0 }}>{cleanDesc}</p>}
-
-          {/* Ссылки на соцсети / сайт */}
-          {socialLinks.length > 0 && (
-            <div className="detail-tags">
-              {socialLinks.map((url, idx) => {
-                let label = 'САЙТ / СОЦСЕТИ';
-                if (url.includes('t.me')) label = 'TELEGRAM';
-                else if (url.includes('vk.com')) label = 'ВКОНТАКТЕ';
-                else if (url.includes('yandex') || url.includes('google') || url.includes('2gis')) label = 'НА КАРТАХ';
-                return (
-                  <a
-                    key={idx}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="stamp hover:bg-[#CCFF00] transition-colors"
-                  >
-                    {label} ↗
-                  </a>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Блок проверки актуальности (только для постоянных мест) */}
           {!isEvent && (
             <div className="status-actions">
               {verifiedRecently ? (
@@ -226,18 +209,10 @@ export function PlaceModal({
                 </div>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="lime-button"
-                    onClick={handleMarkActual}
-                  >
+                  <button type="button" className="lime-button" onClick={handleMarkActual}>
                     АКТУАЛЬНО
                   </button>
-                  <button
-                    type="button"
-                    className="closed-button"
-                    onClick={handleMarkClosed}
-                  >
+                  <button type="button" className="closed-button" onClick={() => onConfirm(true)}>
                     ЗАКРЫЛОСЬ
                   </button>
                 </>
